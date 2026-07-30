@@ -35,6 +35,31 @@ _ROW_LIKE = re.compile(r"\$?\s*\d")
 # matched a strong tier, skipped the shape check that was scoped to the weak
 # tier only, and was returned as an ownership table containing prose.
 _MIN_DATA_ROWS = 2
+
+# An old EDGAR submission marks the end of a table explicitly. Honour it: the
+# footnote block that follows (<FN> ... </FN>) is prose about the table, and
+# capturing it turns footnote fragments into extra holders.
+_TABLE_END = re.compile(r"(?i)</\s*table|<\s*/?\s*fn\b")
+_FOOTNOTE_BLOCK = re.compile(r"(?is)<\s*fn\b.*$")
+
+
+def strip_footnote_block(block: str) -> str:
+    """Drop the <FN> footnote block from an SGML table.
+
+    Old EDGAR nests footnotes INSIDE <TABLE>...</TABLE>, so a correctly
+    delimited match still carries several paragraphs of prose about the table.
+    Left in, those paragraphs tabulate into extra rows and become holders with
+    names like "(b)(ii)(G) of such Act, disclosing benefici".
+
+    The closing </TABLE> is preserved, so the result is still a well-formed SGML
+    block. Cutting it away too left a snippet that no longer looked like SGML and
+    was re-read as plain ASCII with different column geometry.
+    """
+    if not _FOOTNOTE_BLOCK.search(block):
+        return block
+    had_close = re.search(r"(?i)</\s*table\s*>", block)
+    trimmed = _FOOTNOTE_BLOCK.sub("", block).rstrip()
+    return trimmed + ("\n" + had_close.group(0) if had_close else "")
 _TAG = re.compile(r"(?s)<[^>]+>")
 
 
@@ -185,7 +210,14 @@ def _header_block_start(lines: list[str], header_idx: int, max_back: int) -> int
     return k
 
 
-def _capture(lines: list[str], header_idx: int, end: int, cfg: TextConfig, profile: TableProfile) -> str:
+def _capture(
+    lines: list[str],
+    header_idx: int,
+    end: int,
+    cfg: TextConfig,
+    profile: TableProfile,
+    hard_stops: frozenset[int] = frozenset(),
+) -> str:
     """Capture from the top of the header block to the table's natural end.
 
     Ends on a run of blank lines, a new all-caps heading, or a stop-section
@@ -198,6 +230,8 @@ def _capture(lines: list[str], header_idx: int, end: int, cfg: TextConfig, profi
     for k in range(start, end):
         if len(out) >= cfg.capture_max:
             break
+        if k > header_idx and k in hard_stops:
+            break                      # explicit end of table
         line = lines[k]
         out.append(line)
         blanks = blanks + 1 if not line.strip() else 0
@@ -218,14 +252,16 @@ def _candidates_around(
 
     out: list[Candidate] = []
     for block in _SGML_TABLE.findall(window):
+        block = strip_footnote_block(block)
         score, kind = score_snippet(block, Backend.SGML, profile)
         out.append(Candidate(block, Backend.SGML, kind, score, len(out)))
 
     # Markup-free view for geometry; blanking preserves both line count and
     # column offsets, so indices remain interchangeable with `lines`.
     plain = [blank_tags(ln) for ln in lines]
+    stops = frozenset(i for i, ln in enumerate(lines) if _TABLE_END.search(ln))
     for header_idx, kind in _find_ascii_headers(plain, anchor, win_end, cfg, profile):
-        snippet = _capture(plain, header_idx, win_end, cfg, profile)
+        snippet = _capture(plain, header_idx, win_end, cfg, profile, stops)
         if not snippet:
             continue
         # No data rows means prose, whatever the header looked like.
@@ -258,11 +294,12 @@ def candidates(text: str, profile: TableProfile, cfg: TextConfig = DEFAULT) -> l
         return out
 
     plain = [blank_tags(ln) for ln in lines]
+    stops = frozenset(i for i, ln in enumerate(lines) if _TABLE_END.search(ln))
     stride = max(20, cfg.header_lookahead // 2)
     for i in range(0, len(plain), stride):
         end = min(len(plain), i + cfg.header_lookahead)
         for header_idx, kind in _find_ascii_headers(plain, i, end, cfg, profile):
-            snippet = _capture(plain, header_idx, min(len(plain), header_idx + cfg.window_after), cfg, profile)
+            snippet = _capture(plain, header_idx, min(len(plain), header_idx + cfg.window_after), cfg, profile, stops)
             if not snippet:
                 continue
             if _row_like_count(snippet) < _MIN_DATA_ROWS:

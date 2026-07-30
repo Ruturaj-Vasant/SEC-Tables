@@ -99,9 +99,13 @@ OWNERSHIP_ROLE_RULES: RoleRules = (
     # bare address rule, which would otherwise claim it.
     ("holder_name", (r"name and address", r"name of beneficial", r"name and principal address")),
     ("holder_address", (r"^address", r"\baddress\b(?!.*\bname\b)")),
-    ("percent", (r"percent", r"\bpct\b", r"% of", r"of class")),
+    # "Title of Class" must be tested BEFORE percent: the bare phrase "of class"
+    # appears in both "Title of Class" and "Percent of Class", and matching it
+    # first labelled the share-class column as a percentage.
+    ("share_class", (r"title of class", r"class of (?:stock|securit)", r"^class$", r"\bseries\b")),
+    ("percent", (r"percent", r"\bpct\b", r"%\s*of", r"\bof class\b")),
     ("shares", (r"amount and nature", r"\bshares?\b", r"beneficially owned", r"\bamount\b", r"number of")),
-    ("share_class", (r"title of class", r"\bclass\b", r"series")),
+    ("share_class", (r"\bclass\b",)),
     ("holder_name", (r"name .*beneficial owner", r"\bname\b", r"beneficial owner", r"\bholder\b")),
 )
 

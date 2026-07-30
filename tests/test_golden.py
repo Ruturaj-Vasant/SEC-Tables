@@ -304,3 +304,73 @@ class TestBeneficialOwnership:
     def test_group_rows_are_marked(self, result):
         """Group subtotals are aggregates and must be distinguishable."""
         assert "is_group" in result.table.roles
+
+
+# ===========================================================================
+# Item 403 in plain text — CVS/Melville, filed 1996-10-08.
+# The pre-2001 ASCII path, which is the coverage no structured feed reaches.
+# ===========================================================================
+
+CVS_1996 = FIXTURES / "cvs_1996_ownership.txt"
+
+EXPECTED_CVS = [
+    ("FMR Corp.(1)", "Common Stock", "13552054", "12.8"),
+    ("Brinson Partners, Inc.(2)", "Common Stock", "6904354", "6.5"),
+]
+
+
+class TestAsciiOwnership:
+    """Regression for three bugs that made this filing badly wrong and unflagged.
+
+    1. Continuation lines were attached FORWARDS. A holder's address sits on the
+       lines *below* its value row, so buffering them and giving them to the next
+       holder made Brinson Partners "82 Devonshire Street Boston, MA 02109
+       Brinson Partners, Inc.".
+    2. Old EDGAR nests <FN> footnotes INSIDE <TABLE>, so a correctly delimited
+       SGML match still carried prose that tabulated into extra holders.
+    3. "Title of Class" matched the percent rule via the bare phrase "of class",
+       labelling the share-class column as a percentage.
+    """
+
+    @pytest.fixture(scope="class")
+    def result(self):
+        assert CVS_1996.exists()
+        return st.extract(CVS_1996.read_text(errors="ignore"),
+                          profile="ownership", filing_date=date(1996, 10, 8))
+
+    def test_extracted_cleanly(self, result):
+        assert result.ok
+        assert not result.review_flags, result.flags
+
+    def test_uses_a_text_backend(self, result):
+        assert result.backend in (Backend.ASCII, Backend.SGML)
+
+    def test_exactly_three_holders(self, result):
+        """Footnote prose previously added six spurious holders."""
+        assert len(result.table.rows) == 3
+
+    def test_values_match_the_filing(self, result):
+        idx = {r: i for i, r in enumerate(result.table.roles)}
+        got = [
+            (r[idx["holder_name"]], r[idx["share_class"]], r[idx["shares"]], r[idx["percent"]])
+            for r in result.table.rows
+        ]
+        for expected in EXPECTED_CVS:
+            assert expected in got, expected
+
+    def test_address_belongs_to_the_right_holder(self, result):
+        idx = {r: i for i, r in enumerate(result.table.roles)}
+        by_name = {r[idx["holder_name"]]: r[idx["holder_address"]] for r in result.table.rows}
+        assert "82 Devonshire" in by_name["FMR Corp.(1)"]
+        assert "LaSalle" in by_name["Brinson Partners, Inc.(2)"]
+        # The decisive check: FMR's address must NOT have leaked onto Brinson.
+        assert "Devonshire" not in by_name["Brinson Partners, Inc.(2)"]
+
+    def test_share_class_is_not_a_percentage(self, result):
+        idx = result.table.roles.index("share_class")
+        assert {r[idx] for r in result.table.rows} == {"Common Stock", "Series One ESOP"}
+
+    def test_multiline_holder_name_is_joined(self, result):
+        names = [r[0] for r in result.table.rows]
+        melville = [n for n in names if n.startswith("Melville")]
+        assert melville and "Employee Stock Ownership" in melville[0]

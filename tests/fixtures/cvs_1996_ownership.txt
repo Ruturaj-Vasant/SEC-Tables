@@ -1,0 +1,20 @@
+<TABLE>
+<CAPTION>
+                                                                                            Percent of
+     Title of Class           Name and Address of Beneficial Owner       No. of Shares        Class*
+    ----------------         --------------------------------------     --------------     ------------
+<S>                          <C>                                        <C>                <C>
+Common Stock                 FMR Corp.(1)                                 13,552,054          12.8%
+                              82 Devonshire Street
+                              Boston, MA  02109
+Common Stock                 Brinson Partners, Inc.(2)                     6,904,354           6.5%
+                              209 S. LaSalle Street,
+                              11th Floor
+                              Chicago, IL 60604-1295
+Series One ESOP              Melville Corporation and Subsidiaries         5,807,168           100%
+ Convertible                  Employee Stock Ownership Plan Trust
+ Preference                   c/o Bank of New York, as Trustee(3)
+ Stock                        48 Wall Street
+                              New York, NY  10005
+- --------------------
+</TABLE>

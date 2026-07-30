@@ -86,9 +86,9 @@ ambiguity.
 
 ```
 table                  n absent avail found  yield  clean%  strict  strict%   rows
-summary_compensation 200    23   177   175  98.9%   93.1%     109   62.3%   1977
-director_compensation200   118    82    74  90.2%   89.2%      45   60.8%    687
-beneficial_ownership 200     3   197   176  89.3%   85.8%      70   39.8%   2190
+summary_compensation 200    23   177   175  98.9%   93.1%     112   64.0%   1944
+director_compensation200   118    82    74  90.2%   89.2%      45   60.8%    678
+beneficial_ownership 200     3   197   176  89.3%   88.1%      87   49.4%   2006
 ```
 
 - **absent** — the table is not in the document, or was not yet mandated at that
@@ -178,7 +178,7 @@ of `<TICKER>/<FORM>/<DATE>_<FORM>.<ext>`. The SEC source lands behind the same
 ```bash
 pip install sec-tables        # one dependency: lxml
 pip install -e '.[dev]'       # for development
-pytest                        # 190 tests, none touch the network
+pytest                        # 197 tests, none touch the network
 ```
 
 Python 3.10+. `pandas` is optional and only needed for `Table.to_dataframe()`.
@@ -290,11 +290,11 @@ regression test.
 ## Known limitations
 
 - **Neither `clean%` nor `strict%` is accuracy.** No labelled validation set yet.
-- **Pre-2001 ASCII ownership is not reliable.** Column geometry drifts, so
-  addresses and footnote prose surface as holder names. Now flagged
-  (`suspect_identity_values`) rather than silent, but **not fixed** — 1994-2000
-  ownership is 12% strict. Treat that era's ownership output as needing review.
-  Compensation tables in the same era are unaffected (60% strict).
+- **Pre-2001 ASCII ownership is partly repaired but still the weakest path**
+  (1994-2000 at 31% strict, up from 12%). Continuation lines now attach to the
+  correct holder, `<FN>` footnote blocks are excluded, and a column is
+  re-identified from its values when the header is truncated. Remaining failures
+  raise `suspect_identity_values`, so they are visible rather than silent.
 - **`ambiguous_selection` is very common pre-2001** because ASCII candidates tie
   on small integer scores. It makes `strict%` pessimistic there.
 - **Only the SCT has a hand-verified fixture.** Director Compensation and

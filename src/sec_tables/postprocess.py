@@ -234,6 +234,41 @@ def drop_empty_value_columns(table: Table) -> Table:
     )
 
 
+_PERCENT_VALUE = re.compile(r"^\s*\(?\d{1,3}(?:\.\d+)?\s*%\s*\)?$")
+
+
+def repair_roles_by_values(table: Table) -> Table:
+    """Correct a column's role from what it CONTAINS when the header misleads.
+
+    Header text is not always sufficient. An Item 403 percentage column headed
+    only "Class*" — because "Percent of" wrapped onto a line that merged
+    elsewhere — reads as a share class, so its values keep their "%" and are
+    never numerically normalised.
+
+    A column whose values are all percentages is a percentage. This only ever
+    *renames* a column, never moves data, so a wrong guess is visible rather
+    than corrupting.
+    """
+    roles = list(table.roles)
+    if not table.rows:
+        return table
+
+    changed = False
+    for i, role in enumerate(roles):
+        base = role.rsplit("_", 1)[0] if role[-1:].isdigit() else role
+        if base == "percent":
+            continue
+        values = [(r[i] if i < len(r) else "").strip() for r in table.rows]
+        present = [v for v in values if v]
+        if len(present) >= 2 and all(_PERCENT_VALUE.match(v) for v in present):
+            roles[i] = "percent" if "percent" not in roles else f"percent_{i}"
+            changed = True
+
+    if not changed:
+        return table
+    return Table(header=table.header, rows=table.rows, roles=roles)
+
+
 def drop_blank_rows(table: Table) -> Table:
     rows = [r for r in table.rows if any(v.strip() for v in r)]
     return Table(header=table.header, rows=rows, roles=table.roles)
@@ -447,13 +482,29 @@ def suspect_identities(table: Table, identity_role: str) -> list[str]:
 def assemble_holders(table: Table) -> Table:
     """Collapse an ownership table to one row per beneficial holder.
 
-    Different shape from a compensation table: there is no year, one row per
-    holder rather than per person-year, and holder names and addresses wrap over
-    continuation lines. Section labels ("Directors and Executive Officers:") are
-    headings, not holders, and must not become rows.
+    Different shape from a compensation table: no year, one row per holder, and
+    both the name and the address wrap over continuation lines.
 
-    Adds an `is_group` column, because group subtotals are aggregates of rows
-    that may also appear individually.
+    The subtlety is WHICH holder a continuation line belongs to. In a plain-text
+    Item 403 table the share count and percentage appear only on a holder's first
+    line, and everything below it — the rest of the name, then the address —
+    belongs to that holder:
+
+        Common Stock   FMR Corp.(1)                  13,552,054   12.8%
+                        82 Devonshire Street
+                        Boston, MA  02109
+        Common Stock   Brinson Partners, Inc.(2)      6,904,354    6.5%
+
+    Buffering those lines and attaching them to the *next* holder — the obvious
+    reading if you assume continuations precede their row — gave Brinson Partners
+    the name "82 Devonshire Street Boston, MA 02109 Brinson Partners, Inc.".
+    Continuations therefore attach backwards, to the holder already emitted.
+
+    Leading lines seen before any holder are the exception: those genuinely are a
+    wrapped name for the holder about to appear.
+
+    Adds `is_group`, because group subtotals aggregate holders that may also be
+    listed individually and would otherwise be double-counted downstream.
     """
     roles = list(table.roles)
     name_i = _role_index(roles, "holder_name")
@@ -469,36 +520,70 @@ def assemble_holders(table: Table) -> Table:
     if not value_idx:
         return table
 
-    out_rows: list[list[str]] = []
-    name_parts: list[str] = []
+    records: list[dict] = []
+    buffer: list[str] = []
     section = ""
+
+    def attach(lines: list[str]) -> None:
+        """Give trailing continuation lines to the holder already emitted."""
+        if not lines or not records:
+            return
+        records[-1]["extra"].extend(lines)
 
     for row in table.rows:
         cell = (row[name_i] if name_i < len(row) else "").strip()
         has_values = any((row[i] if i < len(row) else "").strip() for i in value_idx)
 
-        if cell and not has_values:
-            # Either a section heading or the first line of a wrapped name.
-            if _SECTION_LABEL.search(cell):
-                section = cell.rstrip(": ").strip()
-                name_parts = []
-            else:
-                name_parts.append(cell)
-            continue
-
         if not has_values:
+            if not cell:
+                continue
+            if _SECTION_LABEL.search(cell):
+                attach(buffer)
+                buffer = []
+                section = cell.rstrip(": ").strip()
+            else:
+                buffer.append(cell)
             continue
 
-        combined = " ".join([*name_parts, cell]) if cell else " ".join(name_parts)
-        name_parts = []
-        full_name, address = _split_holder_address(combined)
-        rest = [(row[i] if i < len(row) else "") for i in range(len(roles)) if i != name_i]
-        out_rows.append(
-            [full_name, address, section, "1" if looks_like_group_row(full_name) else "0", *rest]
-        )
+        if records:
+            attach(buffer)          # trailing lines belong to the previous holder
+            lead: list[str] = []
+        else:
+            lead = buffer           # nothing emitted yet: a wrapped leading name
+        buffer = []
 
-    if not out_rows:
+        records.append({
+            "lead": lead,
+            "cell": cell,
+            "extra": [],
+            "section": section,
+            "rest": [(row[i] if i < len(row) else "") for i in range(len(roles)) if i != name_i],
+        })
+
+    attach(buffer)
+
+    if not records:
         return table
+
+    out_rows: list[list[str]] = []
+    for rec in records:
+        # Extra lines run name-continuation first, then address. The switch is the
+        # first line that reads as an address: "Melville Corporation and
+        # Subsidiaries / Employee Stock Ownership Plan Trust / 48 Wall Street"
+        # is two name lines and one address line, not three of either.
+        name_bits = [*rec["lead"], rec["cell"]]
+        addr_bits: list[str] = []
+        in_address = False
+        for line in rec["extra"]:
+            if not in_address and looks_like_address(line):
+                in_address = True
+            (addr_bits if in_address else name_bits).append(line)
+
+        name, inline_addr = _split_holder_address(" ".join(b for b in name_bits if b))
+        address = " ".join([inline_addr, *addr_bits]).strip()
+        out_rows.append(
+            [name, address, rec["section"], "1" if looks_like_group_row(name) else "0", *rec["rest"]]
+        )
 
     out_roles = ["holder_name", "holder_address", "section", "is_group"] + [
         r for i, r in enumerate(roles) if i != name_i
@@ -522,5 +607,6 @@ def clean(table: Table, assembly: Assembly = Assembly.PERSON_YEAR) -> Table:
     t = merge_marker_columns(table)
     t = drop_marker_columns(t)
     t = drop_empty_value_columns(t)
+    t = repair_roles_by_values(t)
     t = drop_blank_rows(t)
     return _STRATEGIES[assembly](t)

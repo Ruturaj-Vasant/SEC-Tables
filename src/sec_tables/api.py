@@ -145,6 +145,25 @@ def extract(
     # columns, so flagging them as unmapped before that runs reports a problem
     # that no longer exists — and a warning that is not true devalues every
     # other warning.
+    # Re-normalise numerically after assembly. Postprocessing can *rename* a
+    # column once its values are visible — an Item 403 percentage column headed
+    # only "Class*" is recognised by content — and such a column was skipped by
+    # the first pass, keeping its "%" and never becoming a number.
+    # `normalize_number` is idempotent, so already-clean columns are unaffected.
+    if normalize_numbers:
+        final_numeric = {
+            i for i, r in enumerate(table.roles)
+            if r not in prof.text_roles and r.rsplit("_", 1)[0] not in prof.text_roles
+        }
+        table = Table(
+            header=table.header,
+            roles=table.roles,
+            rows=[
+                [normalize_number(v) if i in final_numeric else v for i, v in enumerate(row)]
+                for row in table.rows
+            ],
+        )
+
     final_roles = list(table.roles)
     unmapped = [
         (h, r) for h, r in zip(table.header, final_roles)
