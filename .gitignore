@@ -18,3 +18,12 @@ graphify-out/
 # Benchmark output — depends on a private local corpus, not reproducible
 # from this repo alone
 bench/results.json
+
+# Internal working documents — plan, decision log, agent briefing.
+# Kept locally for continuity across sessions; not part of the library.
+MASTER_PROMPT.md
+DECISIONS.md
+TASK_PROMPT.md
+
+# graphify tooling config
+.graphifyignore
