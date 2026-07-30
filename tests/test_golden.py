@@ -374,3 +374,82 @@ class TestAsciiOwnership:
         names = [r[0] for r in result.table.rows]
         melville = [n for n in names if n.startswith("Melville")]
         assert melville and "Employee Stock Ownership" in melville[0]
+
+
+# ===========================================================================
+# One row per executive, years stacked inside each cell — Apple, 2003-03-24.
+# ===========================================================================
+
+AAPL_2003 = FIXTURES / "aapl_2003_sct_stacked.html"
+
+# Read off the filing: "Steven P. Jobs ... 2002 2001 2000 | 1 1 1 |
+# 2,268,698 43,511,534 | 7,500,000 — 20,000,000"
+EXPECTED_AAPL = [
+    ("Steven P. Jobs", "2002", "1", "2268698"),
+    ("Steven P. Jobs", "2001", "1", "43511534"),
+    ("Steven P. Jobs", "2000", "1", ""),
+    ("Fred D. Anderson", "2002", "656631", ""),
+    ("Fred D. Anderson", "2001", "657039", ""),
+    ("Fred D. Anderson", "2000", "660414", ""),
+    ("Timothy D. Cook", "2001", "452219", "500000"),
+]
+
+
+class TestStackedPersonYearRows:
+    """Early-2000s HTML lays the SCT out as ONE row per executive, with the three
+    reported years stacked inside every cell by <br>.
+
+    Read as written it yields 5 rows instead of 15, each with three years crushed
+    into one field. Three separate things had to be right:
+
+    1. The row must be exploded into one row per year.
+    2. `clean_lines` must keep INTERIOR blank segments — a year with no bonus
+       leaves a gap, and dropping it shifts every later value up one year.
+    3. The explode must run BEFORE numeric normalisation, which takes the first
+       number in a cell and discards the rest.
+    """
+
+    @pytest.fixture(scope="class")
+    def result(self):
+        assert AAPL_2003.exists()
+        return st.extract(AAPL_2003.read_text(), profile="sct", filing_date=date(2003, 3, 24))
+
+    def test_extracted_cleanly(self, result):
+        assert result.ok
+        assert not result.review_flags, result.flags
+
+    def test_fifteen_person_years_not_five_rows(self, result):
+        assert len(result.table.rows) == 15
+
+    def test_five_distinct_executives(self, result):
+        assert len({r[0] for r in result.table.rows}) == 5
+
+    def test_credentialed_name_is_its_own_person(self, result):
+        """'Avadis Tevanian, Jr. Ph.D' failed the name-shape test on 'Ph.D', so
+        no new block opened and his rows inherited the previous executive."""
+        names = {r[0] for r in result.table.rows}
+        assert any("Tevanian" in n for n in names), names
+
+    def test_values_vary_by_year(self, result):
+        """Normalising before the explode collapsed each cell to its first value
+        and then repeated it across all three years."""
+        idx = {r: i for i, r in enumerate(result.table.roles)}
+        anderson = [r for r in result.table.rows if r[idx["name"]] == "Fred D. Anderson"]
+        salaries = [r[idx["salary"]] for r in anderson]
+        assert salaries == ["656631", "657039", "660414"], salaries
+
+    def test_a_missing_year_stays_missing(self, result):
+        """Jobs has no bonus for 2000. The gap must not pull 2001's value down."""
+        idx = {r: i for i, r in enumerate(result.table.roles)}
+        jobs = {r[idx["year"]]: r[idx["bonus"]] for r in result.table.rows
+                if r[idx["name"]] == "Steven P. Jobs"}
+        assert jobs["2002"] == "2268698"
+        assert jobs["2001"] == "43511534"
+        assert jobs["2000"] == ""
+
+    def test_values_match_the_filing(self, result):
+        idx = {r: i for i, r in enumerate(result.table.roles)}
+        got = [(r[idx["name"]], r[idx["year"]], r[idx["salary"]], r[idx["bonus"]])
+               for r in result.table.rows]
+        for expected in EXPECTED_AAPL:
+            assert expected in got, expected

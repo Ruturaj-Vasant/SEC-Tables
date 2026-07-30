@@ -57,6 +57,13 @@ _NAME_WORD = r"(?:[A-Z]\.|[A-Z][A-Za-z'’\-]+|van|von|der|de|del|da|di|la|le|Jr
 _NAME_RE = re.compile(rf"^(?:[A-Z]\.\s*)*[A-Z][A-Za-z'’\-]+,?(?:\s+{_NAME_WORD},?)*[.]?$")
 _YEAR_RE = re.compile(r"^(?:19|20)\d{2}$")
 _FOOTNOTE_TAIL = re.compile(r"\s*\((?:[0-9]{1,3}|[a-z])\)\s*$")
+# Professional credentials trail a name and are not part of its shape.
+# "Avadis Tevanian, Jr. Ph.D" failed the name test on "Ph.D", so no new
+# person block opened and his rows inherited the previous executive's name.
+_CREDENTIAL_TAIL = re.compile(
+    r",?\s*(?:Ph\.?\s?D|M\.?\s?D|J\.?\s?D|M\.?B\.?A|C\.?P\.?A|Ed\.?\s?D|Esq|MBA|CFA)\.?\s*$",
+    re.IGNORECASE,
+)
 _TEXT_ROLES = frozenset({
     "name", "position", "name_and_position", "year", "holder_name",
     "holder_address", "share_class", "section", "is_group", "unknown",
@@ -71,7 +78,9 @@ def looks_like_title(text: str) -> bool:
 
 
 def looks_like_person(text: str) -> bool:
-    s = _FOOTNOTE_TAIL.sub("", text).strip()
+    # Credentials are stripped for the SHAPE test only; the caller keeps them in
+    # the name it emits, because that is how the filing lists the person.
+    s = _CREDENTIAL_TAIL.sub("", _FOOTNOTE_TAIL.sub("", text)).strip()
     if not s or len(s) < 3:
         return False
     if looks_like_title(s):
@@ -185,7 +194,9 @@ def merge_marker_columns(table: Table) -> Table:
     )
 
 
-_MARKER_VALUE = re.compile(r"^(?:\((?:\d{1,3}|[a-z])\)|[%$*†‡]|\(\d{1,3}\)\s*\(\d{1,3}\))$")
+_MARKER_VALUE = re.compile(
+    r"^(?:\((?:\d{1,3}|[a-z])\)|[%$*†‡()]|\(\d{1,3}\)\s*\(\d{1,3}\))$"
+)
 
 
 def drop_marker_columns(table: Table) -> Table:
@@ -278,6 +289,63 @@ def repair_roles_by_values(table: Table) -> Table:
     if not changed:
         return table
     return Table(header=table.header, rows=table.rows, roles=roles)
+
+
+def explode_stacked_rows(table: Table) -> Table:
+    """Split rows whose cells stack several fiscal years into one row each.
+
+    Early-2000s HTML filings lay the SCT out as ONE row per executive, with the
+    three reported years stacked inside every cell by <br>:
+
+        Steven P. Jobs        2002        1        2,268,698
+        Chief Executive       2001        1       43,511,534
+        Officer               2000        1
+
+    Read as written that is one row per person with unusable multi-value cells —
+    Apple 2003 produced 5 rows instead of 15, with three years crushed into one
+    field. The year column states how many rows the line really is.
+
+    The identity column is NOT split: its line break separates name from title,
+    not one year from the next.
+    """
+    roles = list(table.roles)
+    year_i = _role_index(roles, "year")
+    if year_i is None:
+        return table
+
+    name_i = _role_index(roles, "name_and_position")
+    if name_i is None:
+        name_i = _role_index(roles, "name")
+
+    out: list[list[str]] = []
+    changed = False
+    for row in table.rows:
+        years = [y for y in (row[year_i] if year_i < len(row) else "").split("\n")]
+        n = len(years)
+        if n <= 1:
+            out.append(row)
+            continue
+        changed = True
+        for k in range(n):
+            new: list[str] = []
+            for i, cell in enumerate(row):
+                if i == name_i:
+                    new.append(cell)          # name/title, repeated as-is
+                    continue
+                parts = cell.split("\n")
+                # A single value applies to every year; a matching count maps
+                # positionally; anything else is padded rather than guessed at.
+                if len(parts) == 1:
+                    new.append(parts[0] if i != year_i else years[k])
+                elif len(parts) == n:
+                    new.append(parts[k])
+                else:
+                    new.append(parts[k] if k < len(parts) else "")
+            out.append(new)
+
+    if not changed:
+        return table
+    return Table(header=table.header, rows=out, roles=roles)
 
 
 def drop_blank_rows(table: Table) -> Table:

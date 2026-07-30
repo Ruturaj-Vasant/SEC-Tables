@@ -116,6 +116,13 @@ def extract(
                 result.era = era
                 roles = infer_roles(header, rules=prof.role_rules, allowed=prof.allowed_roles(era))
 
+    # Split stacked person-year rows BEFORE numbers are cleaned. A cell holding
+    # "2,268,698\n43,511,534" is two years of pay; `normalize_number` takes the
+    # first match and discards the rest, so normalising first collapses the row
+    # to a single value and then repeats it across every year.
+    table = _post.explode_stacked_rows(Table(header=header, rows=rows, roles=roles))
+    rows, roles = table.rows, table.roles
+
     if normalize_numbers:
         numeric_idx = {
             i for i, r in enumerate(roles)

@@ -52,10 +52,20 @@ def clean_raw(s: str) -> str:
 
 
 def clean_lines(s: str) -> str:
-    """Collapse whitespace within each line but keep line breaks."""
+    """Collapse whitespace within each line but keep line breaks.
+
+    INTERIOR blanks are preserved. A cell stacking three fiscal years may have an
+    empty middle segment — a year with no bonus — and dropping it shifts every
+    later value up a row, silently attributing one year's pay to another. Only
+    leading and trailing blanks are removed.
+    """
     s = s.replace("\xa0", " ")
     lines = [" ".join(ln.split()) for ln in s.split("\n")]
-    return "\n".join(ln for ln in lines if ln).strip()
+    while lines and not lines[0]:
+        lines.pop(0)
+    while lines and not lines[-1]:
+        lines.pop()
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------- DOM
