@@ -307,6 +307,16 @@ regression test.
 - **PDF is not supported.** No non-EDGAR or international documents.
 - **No network access, by design.** Bring your own documents.
 
+## Disclaimer
+
+Not affiliated with, endorsed by, or connected to the U.S. Securities and
+Exchange Commission. "EDGAR" and "SEC" are used descriptively to identify the
+public filing system this library reads.
+
+Filing content is public and the SEC permits its reuse, but extraction is
+heuristic. **Verify anything you rely on against the source filing** — the flags
+exist precisely because some results should not be trusted unreviewed.
+
 ## Licence
 
 MIT — see [LICENSE](LICENSE). Changes in [CHANGELOG.md](CHANGELOG.md).
