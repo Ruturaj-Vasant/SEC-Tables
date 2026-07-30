@@ -1,0 +1,25 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.10 is the declared floor. It is in the matrix because the code has
+        # already drifted past it once: an f-string with nested quotes parses
+        # only on 3.12+ and passed locally.
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e '.[dev]'
+      # tests/conftest.py blocks the socket, so a test that reaches the
+      # network fails loudly rather than silently spending SEC's request budget.
+      - run: pytest -q

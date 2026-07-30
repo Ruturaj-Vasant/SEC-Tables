@@ -1,0 +1,29 @@
+ 
+<TABLE>
+<CAPTION>
+                                                                          LONG TERM COMPENSATION
+                                                                      -------------------------------
+                                              ANNUAL COMPENSATION             AWARDS          PAYOUTS
+                                           -------------------------- ----------------------- -------
+                                                            OTHER     RESTRICTED  SECURITIES          ALL OTHER
+                                                            ANNUAL      STOCK     UNDERLYING   LTIP    COMPEN-
+        NAME AND                           SALARY  BONUS COMPENSATION  AWARD(S)  OPTIONS/SARS PAYOUTS  SATION
+   PRINCIPAL POSITION                 YEAR ($)(1)   ($)     ($)(2)      ($)(3)      (#)(4)    ($)(5)   ($)(6)
+   ------------------                 ---- ------- ----- ------------ ---------- ------------ ------- ---------
+<S>                                   <C>  <C>     <C>   <C>          <C>        <C>          <C>     <C>
+Ronald W. Allen                       1994 475,000    0     8,528            0      89,000        0    18,512
+ Chairman of the Board, President     1993 487,500    0     7,077            0           0        0    17,639
+ and Chief Executive Officer          1992 516,667    0                365,625      75,000        0
+Harold C. Alger                       1994 261,250    0     4,713            0      35,400        0    13,416
+ Executive Vice President-            1993 221,833    0     3,001            0           0        0     8,867
+ Operations                           1992 193,667    0                109,688      15,000        0
+Thomas J. Roeck, Jr.                  1994 261,250    0     4,713            0      26,300        0    13,416
+ Senior Vice President-               1993 263,547    0     3,915            0           0        0    11,803
+ Finance and Chief Financial Officer  1992 260,417    0                146,250      25,000        0
+Russell H. Heil                       1994 251,750    0     4,543            0      26,300        0    13,103
+ Senior Vice President-               1993 253,958    0     3,774            0           0        0    11,543
+ Technical Operations                 1992 256,250    0                146,250      25,000        0
+Rex A. McClelland                     1994 221,667    0     4,289            0      23,200        0    12,349
+ Senior Vice President-               1993 192,083    0     2,875            0           0        0     9,122
+ Corporate Services                   1992 191,250    0                      0      18,000        0
+</TABLE>
