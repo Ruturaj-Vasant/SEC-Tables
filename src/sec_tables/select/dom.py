@@ -29,8 +29,25 @@ def _norm(text: str | None) -> str:
     return " ".join(text.replace("\xa0", " ").lower().split()) if text else ""
 
 
+_XML_DECLARATION = re.compile(r"^\s*<\?xml[^>]*\?>\s*", re.IGNORECASE)
+
+
 def parse(html_bytes: bytes | str):
-    """Parse to an lxml tree, or None if the document is not tree-parseable."""
+    """Parse to an lxml tree, or None if the document is not tree-parseable.
+
+    A str carrying an XML declaration is rejected outright by lxml
+    ("Unicode strings with encoding declaration are not supported"). Modern SEC
+    filings are inline-XBRL XHTML and open with exactly that, so passing text
+    straight through made every one of them unparseable — the DOM backend
+    produced nothing and the document fell through to the plain-text path, which
+    returned SGML fragments full of undecoded `&#160;` entities.
+
+    The declaration is therefore removed before parsing. It is only ever a
+    statement about the byte encoding of a document that has already been
+    decoded, so dropping it loses nothing.
+    """
+    if isinstance(html_bytes, str):
+        html_bytes = _XML_DECLARATION.sub("", html_bytes, count=1)
     try:
         tree = LH.fromstring(html_bytes)
     except Exception:

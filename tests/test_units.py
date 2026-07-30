@@ -580,3 +580,65 @@ class TestInputRepresentationInvariance:
         from sec_tables.select.chain import decode
         raw = b"Smith \xa9 Jones  1997  100"
         assert len(decode(raw)) == len(raw)
+
+
+class TestInlineXbrlDocuments:
+    """Modern SEC filings are inline-XBRL XHTML and open with an XML declaration.
+
+    lxml rejects a *str* carrying one ("Unicode strings with encoding declaration
+    are not supported"), so normalising input to text made every such filing
+    unparseable by the DOM backend. It then fell through to the plain-text path
+    and returned SGML fragments full of undecoded `&#160;` entities — a silent
+    wrong answer on a large and growing share of filings.
+    """
+
+    XHTML = (
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<html xmlns="http://www.w3.org/1999/xhtml">'
+        "<body><table>"
+        "<tr><th>Name and Principal Position</th><th>Year</th><th>Salary</th><th>Total</th></tr>"
+        "<tr><td>Jane Q. Smith Chief Executive Officer</td><td>2023</td>"
+        "<td>$100,000</td><td>$150,000</td></tr>"
+        "</table></body></html>"
+    )
+
+    def test_xml_declaration_does_not_break_dom_parsing(self):
+        from sec_tables.select import dom
+        assert dom.parse(self.XHTML) is not None
+
+    def test_extracts_via_dom_not_the_text_fallback(self):
+        r = st.extract_sct(self.XHTML, date(2024, 1, 11))
+        assert r.ok
+        assert r.backend is Backend.DOM, "fell through to the plain-text path"
+
+    def test_bytes_and_str_still_agree_for_xhtml(self):
+        a = st.extract_sct(self.XHTML.encode(), date(2024, 1, 11))
+        b = st.extract_sct(self.XHTML, date(2024, 1, 11))
+        assert a.table.rows == b.table.rows
+
+
+class TestNameAndTitleWithoutASeam:
+    """Filings run a name into a title with no separator at all.
+
+    "Tim Cook Chief Executive Officer" arrives as one cell with no line break,
+    comma or footnote marker. Reading it as all-title — because it contains title
+    words — loses the executive's name and leaves the row anonymous.
+    """
+
+    @pytest.mark.parametrize("cell,name,title", [
+        ("Tim Cook Chief Executive Officer", "Tim Cook", "Chief Executive Officer"),
+        ("Jane Q. Smith Senior Vice President", "Jane Q. Smith", "Senior Vice President"),
+    ])
+    def test_split_at_the_first_title_word(self, cell, name, title):
+        assert postprocess.split_name_title(cell) == (name, title)
+
+    @pytest.mark.parametrize("cell", [
+        "Chief Executive Officer",
+        "President and",
+        "Chairman of the Board,",
+    ])
+    def test_a_pure_title_stays_a_title(self, cell):
+        assert postprocess.split_name_title(cell)[0] == ""
+
+    def test_a_plain_name_is_untouched(self):
+        assert postprocess.split_name_title("Ronald W. Allen") == ("Ronald W. Allen", "")

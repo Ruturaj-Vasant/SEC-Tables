@@ -124,7 +124,18 @@ def split_name_title(cell: str) -> tuple[str, str]:
         if looks_like_person(left) and looks_like_title(right):
             return _clean_name(left), right.strip()
 
-    # No seam: a cell that is all title is a continuation line, not a name.
+    # No punctuation seam, but a title still starts somewhere: filings often run
+    # the two together with no separator at all — "Tim Cook Chief Executive
+    # Officer". Treating that whole cell as a title (because it contains title
+    # words) loses the executive's name entirely and leaves the row anonymous.
+    # The first title word is the seam.
+    m = _TITLE_RE.search(text)
+    if m and m.start() > 0:
+        head, tail = text[: m.start()].strip(" ,"), text[m.start():].strip()
+        if head and looks_like_person(head):
+            return _clean_name(head), tail
+
+    # A cell that is title from its first word is a continuation line, not a name.
     if looks_like_title(text) and not looks_like_person(text):
         return "", text
     return _clean_name(text), ""
