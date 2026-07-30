@@ -11,17 +11,52 @@ Extracting a Summary Compensation Table is not a parsing problem, it is a
 which look almost exactly like the one you want. This library scores every
 candidate, picks one, and tells you how confident it is.
 
+```bash
+pip install git+https://github.com/Ruturaj-Vasant/SEC-Tables.git
+export SEC_USER_AGENT="Your Project you@example.com"   # SEC requires a contact
+
+sec-tables DAL --year 2023 --table sct -o delta.csv
+```
+
+It downloads the filing, finds the table, and writes CSV. Now the same command
+against a **1994** filing — a plain-text submission with no HTML at all:
+
+```bash
+sec-tables DAL --year 1994 --table sct -o delta-1994.csv
+```
+```
+[ok] delta-1994.csv — 15 rows · 10 columns · 6 people · era=pre2006
+     DAL DEF 14A 1994-09-13 via sgml
+     provenance: sgml_source (SGML <TABLE> block with no row or cell tags)
+```
+```csv
+name,position,year,salary,bonus,other_annual_comp,restricted_stock_awards,options_sars,ltip_payouts,all_other_comp
+Ronald W. Allen,"Chairman of the Board, President and Chief Executive Officer",1994,475000,0,8528,0,89000,0,18512
+Ronald W. Allen,"Chairman of the Board, President and Chief Executive Officer",1993,487500,0,7077,0,0,0,17639
+Ronald W. Allen,"Chairman of the Board, President and Chief Executive Officer",1992,516667,0,,365625,75000,0,
+```
+
+Note the empty `other_annual_comp` for 1992: the filing leaves that cell blank, and
+a blank is preserved as blank rather than coerced to `0`.
+
+Those columns are the pre-2006 layout — `other_annual_comp`, `restricted_stock_awards`,
+`ltip_payouts` — because that is what Item 402 mandated in 1994. Ask for a 2023
+filing and you get the post-2006 columns instead.
+
+## In Python
+
 ```python
 from datetime import date
+from pathlib import Path
 import sec_tables as st
 
-result = st.extract_sct(open("2023-03-16_DEF_14A.html", "rb").read(), date(2023, 3, 16))
+result = st.extract_sct(Path("1994-09-13_DEF_14A.txt").read_bytes(), date(1994, 9, 13))
 
 result.ok            # True
-result.era           # 'post2006'
-result.backend       # Backend.DOM
-result.flags         # [] — nothing suspicious
-result.table.roles   # ['name', 'position', 'year', 'salary', 'bonus', 'stock_awards', ...]
+result.era           # 'pre2006'
+result.backend       # Backend.ASCII  — no DOM existed to parse
+result.flags         # ['ascii_source'] — provenance, not a problem
+result.table.roles   # ['name', 'position', 'year', 'salary', 'bonus', ...]
 print(result.table.to_csv())
 ```
 
@@ -31,9 +66,11 @@ Any supported table, same call:
 st.available_tables()
 # ['beneficial_ownership', 'director_compensation', 'summary_compensation']
 
-st.extract(document, profile="director", filing_date=date(2023, 3, 16))
-st.extract(document, profile="ownership",  filing_date=date(2023, 3, 16))
+st.extract(document, profile="director",  filing_date=date(2023, 3, 16))
+st.extract(document, profile="ownership", filing_date=date(2023, 3, 16))
 ```
+
+Bytes or text, local file or download — the result is identical either way.
 
 ## Why this exists
 
@@ -176,9 +213,11 @@ of `<TICKER>/<FORM>/<DATE>_<FORM>.<ext>`. The SEC source lands behind the same
 ## Install
 
 ```bash
-pip install sec-tables        # one dependency: lxml
-pip install -e '.[dev]'       # for development
-pytest                        # 197 tests, none touch the network
+pip install git+https://github.com/Ruturaj-Vasant/SEC-Tables.git   # one dependency: lxml
+
+git clone https://github.com/Ruturaj-Vasant/SEC-Tables.git         # for development
+cd SEC-Tables && pip install -e '.[dev]'
+pytest                                                             # 197 tests, none touch the network
 ```
 
 Python 3.10+. `pandas` is optional and only needed for `Table.to_dataframe()`.
