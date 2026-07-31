@@ -125,7 +125,7 @@ ambiguity.
 table                  n absent avail found  yield  clean%  strict  strict%   rows
 summary_compensation 200    23   177   175  98.9%   93.1%     119   68.0%   2104
 director_compensation200   118    82    74  90.2%   89.2%      45   60.8%    678
-beneficial_ownership 200     3   197   176  89.3%   88.1%      87   49.4%   2006
+beneficial_ownership 200     3   197   176  89.3%   95.5%      91   51.7%   2029
 ```
 
 - **absent** — the table is not in the document, or was not yet mandated at that
@@ -217,7 +217,7 @@ pip install git+https://github.com/Ruturaj-Vasant/SEC-Tables.git   # one depende
 
 git clone https://github.com/Ruturaj-Vasant/SEC-Tables.git         # for development
 cd SEC-Tables && pip install -e '.[dev]'
-pytest                                                             # 213 tests, none touch the network
+pytest                                                             # 226 tests, none touch the network
 ```
 
 Python 3.10+. `pandas` is optional and only needed for `Table.to_dataframe()`.

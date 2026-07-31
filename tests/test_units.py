@@ -642,3 +642,83 @@ class TestNameAndTitleWithoutASeam:
 
     def test_a_plain_name_is_untouched(self):
         assert postprocess.split_name_title("Ronald W. Allen") == ("Ronald W. Allen", "")
+
+
+class TestEmpiricalHeaderMap:
+    """Roles come from headers that were observed, not headers that were imagined.
+
+    Hand-written regexes encode what a header OUGHT to look like. Measured against
+    an inventory of ~12,000 header occurrences from a real corpus, the regexes and
+    the empirical map disagreed on 20.8% of them — and the map was right about the
+    distinctions that matter for ownership concentration.
+    """
+
+    @pytest.fixture(scope="class")
+    def hmap(self):
+        from sec_tables.normalize import load_header_map
+        m = load_header_map(_profiles.BENEFICIAL_OWNERSHIP.header_map)
+        assert m is not None, "ownership header map is not shipped"
+        return m
+
+    def test_map_is_shipped_and_loads(self, hmap):
+        assert len(hmap) > 100
+
+    @pytest.mark.parametrize("header,role", [
+        ("Percent of Voting Power", "percent_voting_power"),
+        ("Shares beneficially owned | Right to acquire", "shares_right_to_acquire"),
+        ("Options Exercisable Within 60 Days", "shares_right_to_acquire"),
+        ("Share Equivalent Units", "stock_units"),
+        ("Name and Address of Beneficial Owner", "holder_name"),
+        ("Title of Class", "share_class"),
+    ])
+    def test_distinctions_the_regexes_flattened(self, header, role):
+        got = normalize.infer_role(
+            header,
+            rules=_profiles.BENEFICIAL_OWNERSHIP.role_rules,
+            header_map=normalize.load_header_map("ownership_header_roles"),
+        )
+        assert got == role
+
+    def test_options_are_not_outstanding_shares(self):
+        """SEC counts options exercisable within 60 days as beneficially owned,
+        but they are NOT outstanding shares. Folding them into `shares`
+        overstates every holder's concentration."""
+        hm = normalize.load_header_map("ownership_header_roles")
+        for h in ("Right to Acquire", "Options Exercisable Within 60 Days"):
+            assert normalize.infer_role(
+                h, rules=_profiles.BENEFICIAL_OWNERSHIP.role_rules, header_map=hm
+            ) != "shares"
+
+    def test_sub_label_wins_in_a_merged_header(self, hmap):
+        """A merged header is group-then-sub. Both halves match a pattern, but only
+        the second identifies the column. Taking the longest match outright labels
+        'Shares beneficially owned | Right to acquire' as plain `shares`."""
+        from sec_tables.normalize import clean_header
+        assert hmap.lookup(clean_header("Shares beneficially owned Right to acquire")) \
+            == "shares_right_to_acquire"
+
+    def test_pipes_are_separators_not_content(self, hmap):
+        from sec_tables.normalize import clean_header
+        a = hmap.lookup(clean_header("Total | Beneficial | Ownership"))
+        b = hmap.lookup(clean_header("Total Beneficial Ownership"))
+        assert a == b
+
+    def test_schema_carries_the_new_roles(self):
+        roles = set(schema.OWNERSHIP_SCHEMA.roles_for(schema.ERA_SINGLE))
+        assert {"shares_right_to_acquire", "percent_voting_power",
+                "stock_units", "total"} <= roles
+
+    def test_map_is_consulted_before_the_regexes(self):
+        """Without the map these fall through to a hand-written rule."""
+        hm = normalize.load_header_map("ownership_header_roles")
+        h = "Percent of Voting Power"
+        without = normalize.infer_role(h, rules=_profiles.BENEFICIAL_OWNERSHIP.role_rules)
+        with_map = normalize.infer_role(h, rules=_profiles.BENEFICIAL_OWNERSHIP.role_rules,
+                                        header_map=hm)
+        assert with_map == "percent_voting_power"
+        assert without != with_map
+
+    def test_sct_is_unaffected(self):
+        """Only ownership declares a map; compensation must be untouched."""
+        assert _profiles.SCT.header_map is None
+        assert _profiles.DIRECTOR_COMP.header_map is None

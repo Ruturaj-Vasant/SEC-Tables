@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>sec-tables Pyodide bridge — test harness</title>
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <!--
+      Not a user interface. This page exists so a real browser can load the
+      real worker over real HTTP; the assertions live in the Playwright suite.
+    -->
+    <h1>sec-tables Pyodide bridge</h1>
+    <p>Execution harness. Drive it from <code>window.secBridge</code>.</p>
+    <script type="module" src="./dist/harness.js"></script>
+  </body>
+</html>

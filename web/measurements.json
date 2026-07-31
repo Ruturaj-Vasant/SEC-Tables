@@ -1,0 +1,242 @@
+{
+  "measuredAt": "2026-07-31T03:04:39.419Z",
+  "machine": {
+    "os": "darwin 25.3.0 (arm64)",
+    "model": "Mac15,6",
+    "cpu": "Apple M3 Pro",
+    "cores": 11,
+    "memoryGiB": 18,
+    "browser": "Chromium 151.0.7922.34 (Playwright, headless)"
+  },
+  "runtime": {
+    "protocolVersion": 1,
+    "pyodideVersion": "314.0.3",
+    "pythonVersion": "3.14.2",
+    "lxmlVersion": "6.0.2",
+    "secTablesVersion": "0.3.0",
+    "wheelSha256": "fbb686bbfa9288de8f8bd68c21e085e7b915435e3d814818182bb0b5371eac59",
+    "availableProfiles": [
+      "beneficial_ownership",
+      "director_compensation",
+      "summary_compensation"
+    ],
+    "initializedRuntime": true
+  },
+  "assets": [
+    {
+      "label": "pyodide.mjs",
+      "group": "pyodide",
+      "bytes": 17880,
+      "gzipBytes": 7183
+    },
+    {
+      "label": "pyodide.asm.mjs",
+      "group": "pyodide",
+      "bytes": 1249447,
+      "gzipBytes": 260965
+    },
+    {
+      "label": "pyodide.asm.wasm",
+      "group": "pyodide",
+      "bytes": 9596462,
+      "gzipBytes": 3599760
+    },
+    {
+      "label": "python_stdlib.zip",
+      "group": "pyodide",
+      "bytes": 2545106,
+      "gzipBytes": 2503282
+    },
+    {
+      "label": "pyodide-lock.json",
+      "group": "pyodide",
+      "bytes": 113804,
+      "gzipBytes": 25455
+    },
+    {
+      "label": "lxml-6.0.2-cp314-cp314-pyemscripten_2026_0_wasm32.whl",
+      "group": "lxml",
+      "bytes": 1637746,
+      "gzipBytes": 1630911
+    },
+    {
+      "label": "micropip-0.11.1-py3-none-any.whl",
+      "group": "micropip",
+      "bytes": 115486,
+      "gzipBytes": 111411
+    },
+    {
+      "label": "sec_tables-0.3.0-py3-none-any.whl",
+      "group": "sec-tables wheel",
+      "bytes": 65215,
+      "gzipBytes": 63779
+    },
+    {
+      "label": "worker.js",
+      "group": "bridge",
+      "bytes": 16702,
+      "gzipBytes": 5831
+    }
+  ],
+  "coldPreparationMs": 1255,
+  "cachedPreparationMs": 1259,
+  "perCase": [
+    {
+      "id": "aapl_2003_sct_stacked",
+      "documentBytes": 6881,
+      "backend": "dom",
+      "rows": 15,
+      "firstMs": 18.6,
+      "warmMs": 11.5
+    },
+    {
+      "id": "abcp_1997_review_flags",
+      "documentBytes": 49277,
+      "backend": "sgml",
+      "rows": 6,
+      "firstMs": 66.5,
+      "warmMs": 65
+    },
+    {
+      "id": "alk_1994_sgml_sct",
+      "documentBytes": 58198,
+      "backend": "sgml",
+      "rows": 17,
+      "firstMs": 34.9,
+      "warmMs": 33.8
+    },
+    {
+      "id": "azz_2019_ownership",
+      "documentBytes": 17195,
+      "backend": "dom",
+      "rows": 5,
+      "firstMs": 30.9,
+      "warmMs": 29.3
+    },
+    {
+      "id": "cmp_2024_director_comp",
+      "documentBytes": 17748,
+      "backend": "dom",
+      "rows": 10,
+      "firstMs": 32.9,
+      "warmMs": 33.4
+    },
+    {
+      "id": "cvs_1996_ownership",
+      "documentBytes": 1226,
+      "backend": "ascii",
+      "rows": 3,
+      "firstMs": 3.5,
+      "warmMs": 3.5
+    },
+    {
+      "id": "dal_1994_sct",
+      "documentBytes": 2693,
+      "backend": "ascii",
+      "rows": 15,
+      "firstMs": 6.3,
+      "warmMs": 6
+    },
+    {
+      "id": "dal_1997_sct",
+      "documentBytes": 3340,
+      "backend": "ascii",
+      "rows": 15,
+      "firstMs": 7.8,
+      "warmMs": 7.9
+    }
+  ],
+  "filingSizeCeiling": [
+    {
+      "targetMiB": 1,
+      "documentBytes": 1066324,
+      "documentMiB": 1.02,
+      "ok": true,
+      "rows": 10,
+      "executionMs": 573,
+      "wallMs": 578,
+      "error": null
+    },
+    {
+      "targetMiB": 4,
+      "documentBytes": 4212052,
+      "documentMiB": 4.02,
+      "ok": true,
+      "rows": 10,
+      "executionMs": 2187,
+      "wallMs": 2193,
+      "error": null
+    },
+    {
+      "targetMiB": 8,
+      "documentBytes": 8406356,
+      "documentMiB": 8.02,
+      "ok": true,
+      "rows": 10,
+      "executionMs": 4558,
+      "wallMs": 4566,
+      "error": null
+    },
+    {
+      "targetMiB": 16,
+      "documentBytes": 16794964,
+      "documentMiB": 16.02,
+      "ok": true,
+      "rows": 10,
+      "executionMs": 8837,
+      "wallMs": 8850,
+      "error": null
+    },
+    {
+      "targetMiB": 32,
+      "documentBytes": 33572180,
+      "documentMiB": 32.02,
+      "ok": true,
+      "rows": 10,
+      "executionMs": 17425,
+      "wallMs": 17449,
+      "error": null
+    },
+    {
+      "targetMiB": 64,
+      "documentBytes": 67126612,
+      "documentMiB": 64.02,
+      "ok": true,
+      "rows": 10,
+      "executionMs": 34542,
+      "wallMs": 34585,
+      "error": null
+    },
+    {
+      "targetMiB": 128,
+      "documentBytes": 134235476,
+      "documentMiB": 128.02,
+      "ok": true,
+      "rows": 10,
+      "executionMs": 69038,
+      "wallMs": 69120,
+      "error": null
+    },
+    {
+      "targetMiB": 256,
+      "documentBytes": 268453204,
+      "documentMiB": 256.02,
+      "ok": true,
+      "rows": 10,
+      "executionMs": 32851,
+      "wallMs": 33015,
+      "error": null
+    },
+    {
+      "targetMiB": 512,
+      "documentBytes": 536888660,
+      "documentMiB": 512.02,
+      "ok": false,
+      "rows": 0,
+      "executionMs": 367,
+      "wallMs": 737,
+      "error": "MemoryError"
+    }
+  ],
+  "consoleErrors": []
+}

@@ -81,13 +81,18 @@ class TableProfile:
 
     # --- naming and shape ------------------------------------------------
     role_rules: RoleRules = SCT_ROLE_RULES
+    # Name of a shipped empirical header map in `data/`, consulted BEFORE
+    # role_rules. Built by inventorying headers that actually occur, so it knows
+    # phrasings no hand-written pattern would anticipate.
+    header_map: Optional[str] = None
     schema: Optional[Schema] = None
     assembly: Assembly = Assembly.PLAIN
 
     # Roles that must NOT be numerically normalized (identity/label columns).
     text_roles: frozenset[str] = frozenset(
         {"name", "position", "name_and_position", "year", "holder_name",
-         "holder_address", "share_class", "unknown"}
+         "holder_address", "share_class", "section", "is_group", "unknown",
+         "ignore"}
     )
 
     # --- plausibility (consumed by bench/measure.py) ---------------------
@@ -239,6 +244,7 @@ BENEFICIAL_OWNERSHIP = TableProfile(
     ),
     require_tokens=("beneficial", "percent of class", "of class", "beneficially owned"),
     role_rules=OWNERSHIP_ROLE_RULES,
+    header_map="ownership_header_roles",
     schema=_schema.OWNERSHIP_SCHEMA,
     assembly=Assembly.HOLDER,
     identity_role="holder_name",

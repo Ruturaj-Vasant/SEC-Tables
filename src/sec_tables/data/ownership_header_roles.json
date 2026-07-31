@@ -1,0 +1,213 @@
+{
+ "_source": "Derived empirically from headers observed across a real DEF 14A corpus.",
+ "exact": {
+  "name": "holder_name",
+  "name of beneficial owner": "holder_name",
+  "name and address of beneficial owner": "holder_name",
+  "name and address": "holder_name",
+  "name address": "holder_name",
+  "name of individual or number of persons in group": "holder_name",
+  "name of beneficial owners": "holder_name",
+  "name of beneficial owner and address": "holder_name",
+  "shareholder s name and address": "holder_name",
+  "name of beneficial owner title of class or series": "holder_name",
+  "title of class": "share_class",
+  "title of class or series": "share_class",
+  "title of voting class": "share_class",
+  "common stock": "share_class",
+  "class a common stock": "share_class",
+  "class b common stock": "share_class",
+  "class c common stock": "share_class",
+  "position held with the company": "ignore",
+  "beneficial ownership": "shares",
+  "amount beneficially owned": "shares",
+  "amount and nature of beneficial ownership": "shares",
+  "amount and nature of beneficial ownership number": "shares",
+  "amount of common stock beneficially owned": "shares",
+  "number of shares": "shares",
+  "number of shares beneficially owned": "shares",
+  "number of shares owned": "shares",
+  "number of shares of common stock beneficially owned": "shares",
+  "number of shares of common stock owned": "shares",
+  "shares of common stock": "shares",
+  "shares of common stock beneficially owned": "shares",
+  "shares beneficially owned": "shares",
+  "shares owned beneficially": "shares",
+  "common stock beneficially owned": "shares",
+  "shares of company common stock beneficially owned": "shares",
+  "aggregate number of shares of common stock beneficially owned": "shares",
+  "no of shares beneficially owned": "shares",
+  "shares beneficially owned number": "shares",
+  "shares of common stock beneficially owned number": "shares",
+  "total": "total",
+  "total beneficial ownership": "total",
+  "beneficial ownership total": "total",
+  "beneficial ownership total beneficial ownership": "total",
+  "shares of common stock total beneficial ownership": "total",
+  "percent": "percent",
+  "percent of class": "percent",
+  "percent of class or series": "percent",
+  "percent of common stock": "percent",
+  "percent of common stock outstanding": "percent",
+  "percent of outstanding shares": "percent",
+  "percent of outstanding common stock": "percent",
+  "percent of shares outstanding": "percent",
+  "percent of stock outstanding": "percent",
+  "percentage": "percent",
+  "percentage of class": "percent",
+  "percentage of common stock outstanding": "percent",
+  "percentage of common stock owned": "percent",
+  "percentage of outstanding common stock": "percent",
+  "percentage of outstanding shares beneficially owned": "percent",
+  "ownership percentage": "percent",
+  "percentage beneficially owned": "percent",
+  "percent of total common shares outstanding 1": "percent",
+  "percent of class owned": "percent",
+  "percent of voting power": "percent_voting_power",
+  "number of options rsus profits interest units": "stock_units",
+  "stock units": "stock_units",
+  "phantom stock": "stock_units",
+  "share equivalent units": "stock_units",
+  "additional underlying stock units": "stock_units",
+  "right to acquire": "shares_right_to_acquire",
+  "shares acquirable within 60 days": "shares_right_to_acquire",
+  "other shares that may be acquired": "shares_right_to_acquire",
+  "shares subject to options": "shares_right_to_acquire",
+  "rights to acquire beneficial ownership of shares": "shares_right_to_acquire",
+  "number of rights exercisable and vesting within 60 days": "shares_right_to_acquire"
+ },
+ "patterns": [
+  {
+   "match": "name of beneficial owner",
+   "role": "holder_name"
+  },
+  {
+   "match": "name and address of beneficial owner",
+   "role": "holder_name"
+  },
+  {
+   "match": "shareholder s name and address",
+   "role": "holder_name"
+  },
+  {
+   "match": "name/address",
+   "role": "holder_name"
+  },
+  {
+   "match": "title of class",
+   "role": "share_class"
+  },
+  {
+   "match": "title of voting class",
+   "role": "share_class"
+  },
+  {
+   "match": "position held with the company",
+   "role": "ignore"
+  },
+  {
+   "match": "voting authority",
+   "role": "shares_voting_authority"
+  },
+  {
+   "match": "dispositive authority",
+   "role": "shares_dispositive_authority"
+  },
+  {
+   "match": "voting power",
+   "role": "percent_voting_power"
+  },
+  {
+   "match": "shares subject to options",
+   "role": "shares_right_to_acquire"
+  },
+  {
+   "match": "right to acquire",
+   "role": "shares_right_to_acquire"
+  },
+  {
+   "match": "acquirable within 60 days",
+   "role": "shares_right_to_acquire"
+  },
+  {
+   "match": "other shares that may be acquired",
+   "role": "shares_right_to_acquire"
+  },
+  {
+   "match": "stock units",
+   "role": "stock_units"
+  },
+  {
+   "match": "phantom stock",
+   "role": "stock_units"
+  },
+  {
+   "match": "share equivalent units",
+   "role": "stock_units"
+  },
+  {
+   "match": "profits interest units",
+   "role": "stock_units"
+  },
+  {
+   "match": "rsus",
+   "role": "stock_units"
+  },
+  {
+   "match": "total beneficial ownership",
+   "role": "total"
+  },
+  {
+   "match": "amount and nature of beneficial ownership",
+   "role": "shares"
+  },
+  {
+   "match": "amount beneficially owned",
+   "role": "shares"
+  },
+  {
+   "match": "number of shares",
+   "role": "shares"
+  },
+  {
+   "match": "shares beneficially owned",
+   "role": "shares"
+  },
+  {
+   "match": "common stock beneficially owned",
+   "role": "shares"
+  },
+  {
+   "match": "percent of shares of common stock",
+   "role": "percent_shares"
+  },
+  {
+   "match": "percentage of shares",
+   "role": "percent_shares"
+  },
+  {
+   "match": "percent of class",
+   "role": "percent"
+  },
+  {
+   "match": "percentage of class",
+   "role": "percent"
+  },
+  {
+   "match": "percent of common stock",
+   "role": "percent"
+  },
+  {
+   "match": "percent of outstanding",
+   "role": "percent"
+  },
+  {
+   "match": "percentage of outstanding",
+   "role": "percent"
+  },
+  {
+   "match": "ownership percentage",
+   "role": "percent"
+  }
+ ]
+}

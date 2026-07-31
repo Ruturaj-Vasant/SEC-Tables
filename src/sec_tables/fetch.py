@@ -306,6 +306,11 @@ class EdgarSource:
                     filing_date=filed,
                     locator=_document_url(cik, accession, rec.get("primaryDocument"), filed),
                     cik=cik,
+                    # Carried so the cache can tell two same-day filings apart.
+                    # It is EDGAR's own identifier and it is right here; making
+                    # the cache re-derive it from the URL would be a second
+                    # place to get it wrong.
+                    accession=accession,
                 )
             )
         out.sort(key=lambda r: r.filing_date)
