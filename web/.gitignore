@@ -4,3 +4,7 @@ vendor/
 .wheel-build/
 test-results/
 playwright-report/
+dist-test/
+__pycache__/
+*.pyc
+.pytest_cache/

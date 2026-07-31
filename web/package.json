@@ -12,13 +12,24 @@
     "typecheck": "tsc --noEmit",
     "pretest": "npm run vendor && npm run build",
     "test": "playwright test",
-    "measure": "node tools/measure.mjs"
+    "measure": "node tools/measure.mjs",
+    "dev": "node tools/dev.mjs",
+    "dev:fake": "node tools/dev.mjs --fake",
+    "unit": "node tools/unit.mjs",
+    "test:proxy": "cd proxy && python3 -m pytest tests -q",
+    "test:live": "PROXY_CMD=\"python3 tools/live_sec.py\" SEC_LIVE=1 playwright test live"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
     "@types/node": "^26.1.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
     "esbuild": "^0.25.0",
     "pyodide": "314.0.3",
     "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   }
 }

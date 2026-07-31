@@ -1,12 +1,70 @@
-# sec-tables Pyodide bridge
+# sec-tables in the browser
 
-Runs **sec-tables 0.3.0 unmodified, in a browser tab**, behind a typed Web
-Worker boundary. Bytes of a filing go in, a JSON-serializable extraction comes
-out. Verified in real Chromium against the library's own hand-verified fixtures.
+Two things live here:
 
-This is an execution bridge and nothing else. There is no interface here, no SEC
-networking, no persistence, and no way to run arbitrary Python — those are
-separate decisions for whatever consumes this.
+1. **The application** (`app/`, `proxy/`) — type a ticker and a year, get the
+   filing and one disclosure table out of it. A small server fetches from SEC;
+   the extraction runs in your tab, in Python, via WebAssembly.
+2. **The Pyodide bridge** (`src/`) — the typed Web Worker boundary the app runs
+   on. Bytes of a filing go in, a JSON-serializable extraction comes out. It has
+   no interface, no SEC networking and no way to run arbitrary Python, and is
+   usable on its own.
+
+Both are verified in real Chromium against the library's own hand-verified
+fixtures. `ARCHITECTURE.md` records the split and what each half may do.
+
+```bash
+npm install && npx playwright install chromium
+npm run dev            # the app on http://127.0.0.1:5199/app.html (fetches from SEC)
+npm run dev:fake       # the same app, served committed fixtures, no network
+```
+
+## The application
+
+```
+email → ticker → year → form (DEF 14A) → table
+        ↓
+   POST /api/filings   → every matching filing, never silently one of several
+   POST /api/filing    → the raw bytes + metadata on headers
+        ↓
+   the filing, in a sandboxed frame
+   the normalized table below it, with review warnings and provenance apart
+   CSV of exactly the rows on screen
+```
+
+**Fetching is server-side and extraction is browser-side**, and neither half is
+arbitrary. A page cannot fetch from `sec.gov` — `/Archives` sends no permissive
+CORS header — and cannot identify itself to SEC either, because a browser owns
+its own `User-Agent`. Extraction, by contrast, needs no network at all: the
+library is bytes in, table out. See DECISIONS D29-D30.
+
+The proxy (`proxy/sec_proxy/`) is an HTTP surface over `sec_tables.fetch` and
+adds no filing logic of its own — ticker→CIK, the historical `files[]`
+pagination, the pre-May-2000 complete-submission route and the User-Agent rules
+are the library's, already tested. It holds one SEC request budget for every
+visitor at once, caches filing bytes forever (a filing is immutable once filed),
+and **never persists or logs the contact email**: POST-only so it cannot reach an
+access log, absent from the cache key, redacted from request logs. Four tests
+assert that, and one asserts the opposite — that it *does* reach SEC, because
+that is what it is for.
+
+### What the app deliberately does not have
+
+No file upload (the CLI is better at that), no custom Python, no saved projects,
+no CodeMirror, no algorithm comparison, no advertisements. DECISIONS D28.
+
+### Runtime safety
+
+A filing containing `colspan="2000000000"` makes the library expand the grid
+until the worker stops responding — it does not raise and does not return, so a
+size limit would not catch it and there is nothing to await. The app therefore
+enforces a wall-clock timeout and **terminates the worker**, which is the
+bridge's existing cancellation. No cooperative cancellation is claimed anywhere,
+because Pyodide holds the thread and Python could not honour one.
+
+---
+
+# The Pyodide bridge
 
 ```ts
 const bridge = new SecTablesBridge({ workerUrl: new URL("./worker.js", import.meta.url) });
@@ -35,13 +93,16 @@ frontend"** as settled, on three grounds: SEC serves no permissive CORS on
 
 The first and third of those are about **fetching**, and this bridge does not
 fetch. `sec_tables.fetch` is never imported; documents arrive as an ArrayBuffer
-from a file input or a separate proxy. The second — document size — was the open
-empirical question, and it is now measured rather than assumed: a 17 KB proxy
-extracts in 33 ms warm, a 1 MB document in 0.6 s, and the wall is at ~512 MB,
-far above any real filing. See [Measurements](#measurements).
+from whatever supplied them. The second — document size — was the open empirical
+question, and it is now measured rather than assumed: a 17 KB proxy extracts in
+33 ms warm, a 1 MB document in 0.6 s, and the wall is at ~512 MB, far above any
+real filing. See [Measurements](#measurements).
 
-So this does not reopen D6. D6 rules out a browser app that downloads filings
-from SEC; nothing here does that, and nothing here should be extended to.
+So this does not reopen D6, and the application above does not either: **the
+browser still never talks to SEC**. A server does the fetching, for the two
+reasons D29 records — no permissive CORS, and a page cannot set its own
+`User-Agent` to identify itself. What D6 rules out is a browser that downloads
+filings from SEC. Nothing here does that, and nothing here should be extended to.
 
 ---
 
@@ -144,14 +205,25 @@ afterwards, which is why `cancel()` is explicit rather than automatic.
 
 ## Verification
 
-28 tests, one real browser, the real wheel, no mocked Python.
+**45 browser tests** — 28 for the bridge, 17 for the application — plus 30 unit
+tests and 77 proxy tests. One real browser, the real wheel, no mocked Python
+anywhere.
 
 ```bash
 cd web
 npm install
 npx playwright install chromium
-npm test          # runs vendor + build first
+
+npm test                                  # 45 Playwright tests (vendor + build first)
+npm run unit                              # 30 unit tests, node, no browser
+npm run test:proxy                        # 77 proxy tests, SEC mocked at its network seam
+SEC_LIVE_EMAIL=you@example.com npm run test:live   # opt-in: the one test that calls SEC
 ```
+
+The application suite runs against the **real** proxy with SEC's network seam
+faked, so routing, validation, caching and error mapping are all genuine while
+the filing bytes stay the committed fixtures. `npm run test:live` swaps in the
+real proxy and is the only thing here that touches EDGAR; CI never depends on it.
 
 They answer three separate questions:
 
@@ -189,7 +261,25 @@ They answer three separate questions:
 ✓ a queued request can be cancelled without losing the running one
 ✓ repeated extraction leaks no PyProxy, no Python objects and no request state
 
-28 passed (39.0s)
+✓ DAL 1997 Summary Compensation: the whole workflow, with verified values
+✓ the CSV downloads the same canonical rows that are on screen
+✓ a modern HTML filing extracts director compensation through lxml
+✓ beneficial ownership keeps the address out of the holder name
+✓ a year with two filings shows both and defaults to the later one
+✓ form errors are reported per field before anything is sent
+✓ a ticker SEC does not know is a clear message, not a crash
+✓ asking for a table the filing does not contain is a result, not an error
+✓ a filing that hangs extraction is stopped, and the app recovers
+✓ the filing is sandboxed and cannot reach the application
+✓ the blob URL is released when the filing changes
+✓ review warnings are visually separate from provenance, on one result
+✓ nothing on the page claims the result is verified or accurate
+✓ the contact field says where the address goes before it is typed
+✓ the layout reflows on a narrow viewport without horizontal scroll
+✓ the whole form is reachable and operable from the keyboard
+✓ invalid fields are announced to assistive technology
+
+45 passed
 ```
 
 Every test also fails if the browser console is dirty — a worker that throws

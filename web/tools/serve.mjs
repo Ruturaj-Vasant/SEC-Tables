@@ -14,7 +14,7 @@
  * drift, and the whole value of those files is that they are the ones the
  * Python suite asserts against.
  */
-import { createServer } from "node:http";
+import { createServer, request as httpRequest } from "node:http";
 import { createReadStream } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { dirname, extname, join, normalize, resolve } from "node:path";
@@ -34,6 +34,12 @@ const MOUNTS = [
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",
+  // Without this a stylesheet goes out as application/octet-stream and Chromium
+  // refuses to apply it — the page renders unstyled and every layout assertion
+  // is meaningless while every functional one still passes.
+  ".css": "text/css; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
   ".js": "text/javascript; charset=utf-8",
   ".mjs": "text/javascript; charset=utf-8",
   ".json": "application/json",
@@ -80,8 +86,39 @@ async function tamperedWheel(name) {
   return bytes;
 }
 
+/**
+ * Forward /api/* to the Python proxy.
+ *
+ * Same origin on purpose: the browser then needs no CORS, no preflight and no
+ * credentials story, and — more to the point — the app has exactly one server
+ * it is allowed to talk to. `PROXY_TARGET` is read once from the environment,
+ * never from the request, so a client cannot redirect this hop.
+ */
+const PROXY_TARGET = process.env.PROXY_TARGET ?? "http://127.0.0.1:5310";
+
+function forwardToProxy(req, res) {
+  const target = new URL(req.url, PROXY_TARGET);
+  const upstream = httpRequest(
+    { hostname: target.hostname, port: target.port, path: target.pathname + target.search,
+      method: req.method, headers: { ...req.headers, host: target.host } },
+    (proxied) => {
+      res.writeHead(proxied.statusCode ?? 502, proxied.headers);
+      proxied.pipe(res);
+    },
+  );
+  upstream.on("error", (err) => {
+    res.writeHead(502, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: { kind: "offline", message: `proxy unreachable: ${err.message}` } }));
+  });
+  req.pipe(upstream);
+}
+
 createServer(async (req, res) => {
   const path = (req.url ?? "/").split("?")[0];
+  if (path.startsWith("/api/")) {
+    forwardToProxy(req, res);
+    return;
+  }
   if (path.startsWith("/py-tampered/")) {
     try {
       const bytes = await tamperedWheel(path.slice("/py-tampered/".length));
@@ -111,11 +148,10 @@ createServer(async (req, res) => {
     res.writeHead(200, {
       "content-type": TYPES[extname(file)] ?? "application/octet-stream",
       "content-length": info.size,
-      // Cross-origin isolation is not required by this bridge (no SharedArrayBuffer,
-      // no threads), but the headers are set so the suite runs under the same
-      // policy a production deployment would most likely use.
+      // COOP but deliberately NOT COEP: nothing here uses SharedArrayBuffer or
+      // wasm threads, and `require-corp` would block the sandboxed blob: frame
+      // the filing viewer renders documents in.
       "cross-origin-opener-policy": "same-origin",
-      "cross-origin-embedder-policy": "require-corp",
       "cross-origin-resource-policy": "same-origin",
       // The pinned runtime is immutable by construction — a version in the
       // path, a checksum on the wheel — so it is cacheable, and a returning

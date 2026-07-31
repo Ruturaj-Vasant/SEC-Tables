@@ -1,0 +1,182 @@
+/* Plain CSS, no framework. The interface is one form and two panels. */
+
+:root {
+  --bg: #ffffff;
+  --panel: #f7f8fa;
+  --ink: #16181d;
+  --muted: #5f6673;
+  --line: #d9dde5;
+  --accent: #1c4f9c;
+  --ok: #14663a;
+  --warn: #8a5300;
+  --bad: #a02020;
+  --warn-bg: #fff6e5;
+  --bad-bg: #fdecec;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a;
+    --panel: #1c1f26;
+    --ink: #e8eaee;
+    --muted: #9aa3b2;
+    --line: #2c313b;
+    --accent: #7aa7e8;
+    --ok: #6ed69b;
+    --warn: #f0c46a;
+    --bad: #f08a8a;
+    --warn-bg: #2e2718;
+    --bad-bg: #2e1b1b;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.app { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+header h1 { margin: 0 0 .25rem; font-size: 1.35rem; letter-spacing: -0.01em; }
+.muted { color: var(--muted); }
+header p { margin: 0 0 1.25rem; max-width: 68ch; }
+
+.columns { display: grid; grid-template-columns: minmax(300px, 380px) 1fr; gap: 1.5rem; align-items: start; }
+/* Grid items default to min-width:auto, so the nowrap table below would widen
+   its track and push the whole page sideways instead of scrolling inside
+   .table-scroll. This is the fix for that, not a cosmetic rule. */
+.columns > * { min-width: 0; }
+@media (max-width: 900px) { .columns { grid-template-columns: 1fr; } }
+/* A <select>'s intrinsic minimum is its widest option — "Summary Compensation
+   — Item 402(c)/(b)" — so on a phone the two-up row cannot shrink to fit and
+   pushes the page sideways however narrow the track is. One column instead. */
+@media (max-width: 560px) { .filing-form .row { grid-template-columns: 1fr; } }
+
+/* --- form ---------------------------------------------------------------- */
+
+.filing-form { display: flex; flex-direction: column; gap: 1rem; }
+.filing-form .row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.filing-form .row .field:last-child { grid-column: 1 / -1; }
+
+.field { display: flex; flex-direction: column; gap: .3rem; min-width: 0; }
+.field label { font-weight: 600; font-size: .85rem; }
+.field input, .field select {
+  padding: .5rem .6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  min-width: 0;
+}
+.field input:focus-visible, .field select:focus-visible, button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.field input[aria-invalid="true"] { border-color: var(--bad); }
+.field .hint { margin: 0; font-size: .8rem; color: var(--muted); }
+.field .error { margin: 0; font-size: .8rem; color: var(--bad); font-weight: 600; }
+
+.actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+button {
+  padding: .5rem .9rem;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+button.secondary { background: transparent; color: var(--accent); }
+button[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* --- status -------------------------------------------------------------- */
+
+.status {
+  margin: 1rem 0 0;
+  padding: .6rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.status.ok { border-color: var(--ok); color: var(--ok); }
+.status.review { border-color: var(--warn); background: var(--warn-bg); color: var(--warn); }
+.status.bad { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); }
+
+.spinner {
+  width: 12px; height: 12px; flex: none;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+/* --- panels -------------------------------------------------------------- */
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+.panel h2 { margin: 0; font-size: 1rem; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: .75rem; }
+.panel-head p { margin: .15rem 0 0; font-size: .82rem; }
+
+.filing-frame {
+  width: 100%;
+  height: 46vh;
+  min-height: 320px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.download {
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: .35rem .7rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: .85rem;
+}
+
+/* --- result -------------------------------------------------------------- */
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .6rem 1rem; margin: 0 0 1rem; }
+.facts dt { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.facts dd { margin: .1rem 0 0; font-size: .9rem; }
+
+.callout { padding: .6rem .75rem; border-radius: 6px; margin: 0 0 1rem; font-size: .88rem; }
+.callout.review { background: var(--warn-bg); border: 1px solid var(--warn); color: var(--warn); }
+.callout.bad { background: var(--bad-bg); border: 1px solid var(--bad); color: var(--bad); }
+
+.flags { margin: 0 0 1rem; }
+.flags h4 { margin: 0 0 .3rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+.flags ul { margin: 0; padding-left: 1.1rem; }
+.flags li { font-size: .85rem; margin-bottom: .2rem; }
+.flags code { font-size: .82rem; margin-right: .4rem; }
+/* The two kinds never share a colour: one is a defect, the other is not. */
+.flags.review h4, .flags.review code { color: var(--warn); }
+.flags.provenance h4, .flags.provenance code { color: var(--muted); }
+.flags.other h4, .flags.other code { color: var(--muted); }
+
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+th, td { padding: .35rem .55rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+th { position: sticky; top: 0; background: var(--panel); font-size: .75rem; text-transform: uppercase; letter-spacing: .03em; }
+tbody tr:hover { background: var(--panel); }
+
+footer { margin-top: 2rem; font-size: .8rem; max-width: 80ch; }

@@ -16,13 +16,21 @@ await build({
   entryPoints: {
     worker: join(WEB, "src", "worker.ts"),
     harness: join(WEB, "test", "harness.ts"),
+    main: join(WEB, "app", "src", "main.tsx"),
+    app: join(WEB, "app", "src", "app.css"),
   },
   outdir: join(WEB, "dist"),
   bundle: true,
   format: "esm",
   target: "es2022",
   platform: "browser",
+  jsx: "automatic",
   sourcemap: true,
+  // React ships a development build unless told otherwise, and it is both
+  // several times larger and noisier in the console — which matters here,
+  // because the browser suite fails on a dirty console.
+  define: { "process.env.NODE_ENV": '"production"' },
+  minify: true,
   loader: { ".py": "text" },
   // `pyodide.mjs` is imported at runtime from a URL the worker computes, so it
   // must stay out of the bundle: it resolves its own wasm relative to where it
