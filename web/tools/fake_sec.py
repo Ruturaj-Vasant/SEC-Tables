@@ -25,6 +25,7 @@ sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(WEB / "proxy"))
 
 from sec_proxy.core import FilingService  # noqa: E402
+from sec_proxy.limits import AbuseGuard, SlidingWindow  # noqa: E402
 from sec_proxy.server import ProxyServer  # noqa: E402
 
 FIXTURES = REPO / "tests" / "fixtures"
@@ -137,7 +138,13 @@ def main() -> int:
         return source
 
     service._source = _source
-    server = ProxyServer(("127.0.0.1", port), service, log_requests=False)
+    # The CORS policy is the shipped one — that is the whole point of running the
+    # real server here, and the browser suite asserts against it. The per-client
+    # limit is not: the entire suite runs from one address in a few minutes and
+    # would otherwise throttle itself, which would look like an application bug.
+    # Raising it here rather than in the policy keeps the deployed default honest.
+    guard = AbuseGuard(window=SlidingWindow(limit=100_000, window_seconds=1.0))
+    server = ProxyServer(("127.0.0.1", port), service, log_requests=False, guard=guard)
     sys.stderr.write(f"fake-SEC proxy on http://127.0.0.1:{port} (fixtures from {FIXTURES})\n")
     sys.stderr.flush()
     try:
