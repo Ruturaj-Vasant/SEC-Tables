@@ -1,10 +1,17 @@
 """SEC filing acquisition for the browser app.
 
-The browser cannot do this itself. `www.sec.gov/Archives` serves no permissive
-CORS header, so a `fetch()` from a page is refused before it leaves; and a page
-cannot make an honest User-Agent declaration anyway, because the browser owns
-that header. So a small server does the fetching and the browser does the
-extraction.
+The browser cannot do this itself — measured, on three independent grounds, and
+narrower than this file used to claim (DECISIONS D38, R10):
+
+1. `www.sec.gov` sends no `Access-Control-Allow-Origin` at all, which covers
+   every filing document under `/Archives/` and the ticker map under `/files/`.
+2. `data.sec.gov` *does* send `*` on submissions and their pagination files —
+   but SEC's edge answers a browser's own User-Agent with **403**, and that 403
+   carries no CORS header either, so the permissive path is unreachable anyway.
+3. A page cannot supply the identification that would fix (2). `fetch()` accepts
+   a `User-Agent` header, resolves without error, and sends its own.
+
+So a small server does the fetching and the browser does the extraction.
 
 Everything here is a thin arrangement of `sec_tables.fetch`, `sec_tables.cache`
 and `sec_tables.sources`. Nothing re-implements filing discovery, the historical
