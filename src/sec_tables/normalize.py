@@ -16,8 +16,10 @@ because "stock" alone would otherwise capture "Securities Underlying Options/SAR
 """
 from __future__ import annotations
 
+import json
 import re
 import unicodedata
+from pathlib import Path
 from typing import Iterable, Optional, Sequence
 
 from .schema import SCT_SCHEMA
@@ -44,7 +46,10 @@ def clean_header(raw: str | None) -> str:
     # "Compen- sation" becomes "compen- sation" and never matches.
     s = _HYPHEN_WRAP.sub(r"\1\2", s)
     s = _FOOTNOTE.sub(" ", s)
-    s = s.replace("$", " ").replace("/", " ")
+    # "|" only ever separates merged header segments; treat it as whitespace so
+    # "Total | Beneficial | Ownership" and "Total Beneficial Ownership" are the
+    # same header.
+    s = s.replace("$", " ").replace("/", " ").replace("|", " ")
     # "Total ($)(6)" leaves "( )" behind once the marker and footnote are gone;
     # an empty bracket is not part of the label.
     s = _EMPTY_PARENS.sub(" ", s)
@@ -107,7 +112,88 @@ OWNERSHIP_ROLE_RULES: RoleRules = (
     ("shares", (r"amount and nature", r"\bshares?\b", r"beneficially owned", r"\bamount\b", r"number of")),
     ("share_class", (r"\bclass\b",)),
     ("holder_name", (r"name .*beneficial owner", r"\bname\b", r"beneficial owner", r"\bholder\b")),
+    # Fallbacks for roles the empirical map knows but has not seen phrased this
+    # way. Options exercisable within 60 days count as beneficially owned but are
+    # NOT outstanding shares, so they must not fall through to `shares`.
+    ("shares_right_to_acquire", (
+        r"right to acquire", r"exercisable within", r"\bstock options?\b",
+        r"underlying options", r"acquirable",
+    )),
+    ("stock_units", (r"stock units", r"share units", r"share equivalent", r"phantom")),
+    ("total", (r"^total$", r"total beneficial", r"beneficial ownership total")),
 )
+
+# ---------------------------------------------------------------------------
+# Empirical header maps.
+#
+# Hand-written regexes encode what a header OUGHT to look like. A map built by
+# inventorying headers that actually occur encodes what filers really write.
+# Measured against a real corpus the two disagreed on 20.8% of header
+# occurrences, and the map was right: it separates `shares_right_to_acquire`
+# from `shares`, and `percent_voting_power` from `percent` — distinctions the
+# regexes flattened, and which change what an ownership-concentration measure
+# computes.
+#
+# The map is consulted FIRST; the regexes stay as the fallback for anything it
+# has not seen.
+# ---------------------------------------------------------------------------
+
+_DATA_DIR = Path(__file__).parent / "data"
+_map_cache: dict[str, "HeaderMap"] = {}
+
+
+class HeaderMap:
+    """Exact-then-substring lookup from observed header text to a role."""
+
+    __slots__ = ("exact", "patterns")
+
+    def __init__(self, exact: dict, patterns: list):
+        self.exact = exact
+        self.patterns = [(p["match"], p["role"]) for p in patterns]
+
+    def lookup(self, cleaned: str) -> Optional[str]:
+        """Exact match, else the most specific pattern.
+
+        Headers arrive merged, group label first and sub-label second:
+        "Shares beneficially owned  Right to acquire". Both halves match a
+        pattern, but only the second identifies the column — the first names the
+        span it sits under. So among candidates prefer the one occurring LATEST,
+        then the longest. Taking the longest match outright labels that column
+        `shares`, silently merging option rights into outstanding shares.
+        """
+        if not cleaned:
+            return None
+        role = self.exact.get(cleaned)
+        if role is not None:
+            return role
+        best = None
+        for match, role in self.patterns:
+            pos = cleaned.rfind(match)
+            if pos < 0:
+                continue
+            key = (pos, len(match))
+            if best is None or key > best[0]:
+                best = (key, role)
+        return best[1] if best else None
+
+    def __len__(self) -> int:
+        return len(self.exact) + len(self.patterns)
+
+
+def load_header_map(name: Optional[str]) -> Optional[HeaderMap]:
+    """Load a shipped header map by name, or None when there is none."""
+    if not name:
+        return None
+    if name in _map_cache:
+        return _map_cache[name]
+    path = _DATA_DIR / f"{name}.json"
+    if not path.is_file():
+        return None
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    m = HeaderMap(raw.get("exact", {}), raw.get("patterns", []))
+    _map_cache[name] = m
+    return m
+
 
 _compiled_cache: dict[int, tuple[tuple[str, tuple[re.Pattern[str], ...]], ...]] = {}
 
@@ -128,6 +214,7 @@ def infer_role(
     *,
     rules: Optional[RoleRules] = None,
     allowed: Optional[Iterable[str]] = None,
+    header_map: Optional["HeaderMap"] = None,
 ) -> str:
     """Map one header cell to a canonical role.
 
@@ -141,6 +228,13 @@ def infer_role(
     text = clean_header(header)
     if text in PLACEHOLDER_HEADERS:
         return "unknown"
+
+    # An observed-header map beats a hand-written pattern: it was built from what
+    # filers write, not from what a reader imagines they write.
+    if header_map is not None:
+        hit = header_map.lookup(text)
+        if hit is not None:
+            return hit
 
     ruleset = compile_rules(rules if rules is not None else SCT_ROLE_RULES)
     if allowed is not None:
@@ -175,13 +269,14 @@ def infer_roles(
     *,
     rules: Optional[RoleRules] = None,
     allowed: Optional[Iterable[str]] = None,
+    header_map: Optional["HeaderMap"] = None,
 ) -> list[str]:
     """Map a header row, disambiguating repeats with a positional suffix."""
     allowed_set = set(allowed) if allowed is not None else None
     out: list[str] = []
     counts: dict[str, int] = {}
     for h in headers:
-        role = infer_role(h, era, rules=rules, allowed=allowed_set)
+        role = infer_role(h, era, rules=rules, allowed=allowed_set, header_map=header_map)
         if role in counts and role != "unknown":
             counts[role] += 1
             role = f"{role}_{counts[role]}"

@@ -21,7 +21,7 @@ from typing import Optional, Union
 from . import postprocess as _post
 from . import profiles as _profiles
 from . import tabulate
-from .normalize import infer_roles, normalize_number
+from .normalize import infer_roles, load_header_map, normalize_number
 from .profiles import TableProfile
 from .schema import ERA_TRANSITION
 from .select import chain
@@ -34,6 +34,16 @@ DEFAULT_PROFILE = "summary_compensation"
 
 def _resolve(profile: ProfileArg) -> TableProfile:
     return _profiles.get(profile) if isinstance(profile, str) else profile
+
+
+def _roles_for(header, prof, era, header_map):
+    """Map a header row for a profile. Re-run whenever the era changes."""
+    return infer_roles(
+        header,
+        rules=prof.role_rules,
+        allowed=prof.allowed_roles(era),
+        header_map=header_map,
+    )
 
 
 def _base_roles(roles: list[str]) -> set[str]:
@@ -97,7 +107,8 @@ def extract(
         result.flag("no_data_rows")
         return result
 
-    roles = infer_roles(header, rules=prof.role_rules, allowed=prof.allowed_roles(era))
+    hmap = load_header_map(prof.header_map)
+    roles = _roles_for(header, prof, era, hmap)
 
     # Cross-check the date-derived era against the columns actually present. A
     # 2008-dated filing carrying an LTIP column means the date is wrong, not that
@@ -108,13 +119,13 @@ def extract(
             if era == ERA_TRANSITION:
                 era = observed
                 result.era = era
-                roles = infer_roles(header, rules=prof.role_rules, allowed=prof.allowed_roles(era))
+                roles = _roles_for(header, prof, era, hmap)
             elif observed != era:
                 result.flag("era_mismatch")
                 result.meta["era_from_columns"] = observed
                 era = observed
                 result.era = era
-                roles = infer_roles(header, rules=prof.role_rules, allowed=prof.allowed_roles(era))
+                roles = _roles_for(header, prof, era, hmap)
 
     # Split stacked person-year rows BEFORE numbers are cleaned. A cell holding
     # "2,268,698\n43,511,534" is two years of pay; `normalize_number` takes the

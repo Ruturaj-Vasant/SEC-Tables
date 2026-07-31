@@ -238,12 +238,35 @@ DIRECTOR_COMP_SCHEMA = Schema(
 
 # Item 403 — Security Ownership of Certain Beneficial Owners and Management.
 # Holder-level, not person-year; no mandated numeric total.
+# Item 403 draws distinctions a five-column model cannot express, and they are
+# not cosmetic:
+#
+#   shares_right_to_acquire  options exercisable within 60 days. SEC counts these
+#                            as beneficially owned, but they are NOT outstanding
+#                            shares — folding them into `shares` overstates every
+#                            holder's concentration.
+#   percent_voting_power     dual-class issuers report economic ownership and
+#                            voting control separately. Collapsing them erases the
+#                            most informative governance variable in the table.
+#   shares_voting_authority / shares_dispositive_authority
+#                            the Schedule 13D/G sole-vs-shared power split.
+#   stock_units              deferred and phantom units — not outstanding stock.
+#
+# These come from an inventory of headers observed across a real corpus, not from
+# reading the regulation.
 OWNERSHIP_COLUMNS: tuple[Column, ...] = (
     Column("holder_name", "Name of Beneficial Owner", numeric=False, required=True),
     Column("holder_address", "Address", numeric=False),
     Column("share_class", "Title of Class", numeric=False),
     Column("shares", "Amount and Nature of Beneficial Ownership"),
+    Column("shares_right_to_acquire", "Shares Subject to Options Exercisable Within 60 Days"),
+    Column("shares_voting_authority", "Shares — Voting Power"),
+    Column("shares_dispositive_authority", "Shares — Dispositive Power"),
+    Column("stock_units", "Stock Units / Deferred Units"),
+    Column("total", "Total Beneficial Ownership"),
     Column("percent", "Percent of Class"),
+    Column("percent_shares", "Percent of Shares Outstanding"),
+    Column("percent_voting_power", "Percent of Voting Power"),
 )
 
 OWNERSHIP_SCHEMA = Schema(

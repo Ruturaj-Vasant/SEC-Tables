@@ -39,6 +39,8 @@ path = "src/sec_tables/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sec_tables"]
+# The empirical header maps are data the library needs at runtime.
+artifacts = ["src/sec_tables/data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
