@@ -10,7 +10,8 @@
 import * as React from "react";
 import { SecTablesBridge, CancelledError } from "../../src/client.js";
 import type { Profile } from "../../src/protocol.js";
-import { fetchFiling, listFilings, ProxyError } from "./api.js";
+import { fetchFiling, listFilings, pingProxy, ProxyError } from "./api.js";
+import { API_BASE, apiAvailable, UNCONFIGURED_MESSAGE } from "./config.js";
 import {
   describeProxyError,
   isValid,
@@ -75,6 +76,23 @@ export function App() {
   };
 
   React.useEffect(() => () => bridgeRef.current?.dispose(), []);
+
+  /**
+   * Wake the proxy while the visitor is still typing.
+   *
+   * The hosted proxy scales to zero, so the first request after an idle period
+   * pays the container's whole cold start. Spending it here — on load, before
+   * anyone has filled anything in — moves that wait off the critical path and
+   * onto time the visitor was going to spend anyway. It is best-effort: a failed
+   * ping changes nothing, because the real request reports its own failure with
+   * far better information than a probe could.
+   */
+  React.useEffect(() => {
+    if (!apiAvailable()) return;
+    const controller = new AbortController();
+    void pingProxy(controller.signal);
+    return () => controller.abort();
+  }, []);
 
   const busy = BUSY.has(state.status);
 
@@ -281,6 +299,12 @@ export function App() {
               </span>
             </div>
 
+            {!apiAvailable() ? (
+              <p className="callout bad" data-testid="no-proxy" role="alert">
+                {UNCONFIGURED_MESSAGE}
+              </p>
+            ) : null}
+
             {state.recoveredFromTimeout ? (
               <p className="callout bad" role="alert">
                 The Python runtime was terminated and rebuilt. The next extraction starts from a
@@ -314,6 +338,16 @@ export function App() {
 
         <footer>
           <span>Open-source SEC table extraction.</span>
+          <span className="muted" data-testid="api-origin">
+            {/* Named rather than hidden: which server fetched the filing is part
+                of what this page is claiming, and it is the first thing to check
+                when a deployment misbehaves. */}
+            {API_BASE.kind === "configured"
+              ? `Filings fetched by ${API_BASE.base}`
+              : API_BASE.kind === "same-origin"
+                ? "Filings fetched by the local proxy on this origin"
+                : "No filing server configured"}
+          </span>
           <span className="muted">
             Not affiliated with or endorsed by the U.S. Securities and Exchange Commission.
             Extraction is heuristic — verify anything you rely on against the filing.

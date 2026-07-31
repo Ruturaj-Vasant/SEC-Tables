@@ -17,6 +17,8 @@
     "dev:fake": "node tools/dev.mjs --fake",
     "unit": "node tools/unit.mjs",
     "test:proxy": "cd proxy && python3 -m pytest tests -q",
+    "//test:crossorigin": "The whole app workflow again, with the API on another origin. A different port IS a different origin, so this exercises real preflights against the real proxy — the deployed Pages topology, minus TLS. Rebuilds same-origin afterwards so `npm run dev` is not left pointing elsewhere.",
+    "test:crossorigin": "SEC_TABLES_API_BASE=http://127.0.0.1:5310 node tools/build.mjs && playwright test app cors; node tools/build.mjs",
     "test:live": "PROXY_CMD=\"python3 tools/live_sec.py\" SEC_LIVE=1 playwright test live"
   },
   "devDependencies": {

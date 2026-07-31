@@ -1,11 +1,17 @@
 /**
  * The only way this page talks to SEC: through its own server.
  *
- * There is no direct-to-SEC path here and there cannot be one — `/Archives`
- * sends no permissive `Access-Control-Allow-Origin`, so the request would be
- * refused before it left the browser, and a page cannot set a User-Agent to
- * declare who is asking in the first place.
+ * There is no direct-to-SEC path here and there cannot be one. Measured, not
+ * assumed — see DECISIONS D38. `www.sec.gov` sends no `Access-Control-Allow-
+ * Origin` at all; `data.sec.gov` does send `*`, but SEC's edge answers a
+ * browser's own User-Agent with 403 and that 403 carries no CORS header either;
+ * and a page cannot fix that, because `fetch()` drops a `User-Agent` it is given
+ * without raising.
+ *
+ * Which server it is, is `config.ts`'s decision — same-origin in development,
+ * a hosted proxy on GitHub Pages.
  */
+import { apiUrl } from "./config.js";
 import {
   parseFilingList,
   parseFilingMeta,
@@ -61,20 +67,58 @@ async function readError(response: Response): Promise<ProxyError> {
  * promise this app makes about that address is that it is not kept anywhere.
  */
 async function post(path: string, body: unknown, signal?: AbortSignal): Promise<Response> {
+  let url: string;
+  try {
+    url = apiUrl(path);
+  } catch (err) {
+    // A build with no proxy configured. Its own kind, because the fix is a
+    // deployment change and no amount of retrying or re-typing helps.
+    throw new ProxyError("not_configured", (err as Error).message);
+  }
   let response: Response;
   try {
-    response = await fetch(path, {
+    response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       signal,
+      // No cookies, no `Authorization`, nothing ambient — and saying so keeps
+      // the proxy free to answer with a specific `Access-Control-Allow-Origin`
+      // instead of having to satisfy the credentialed-request rules.
+      credentials: "omit",
     });
   } catch (err) {
     if ((err as Error).name === "AbortError") throw err;
+    // A cross-origin refusal arrives here as an opaque `TypeError: Failed to
+    // fetch` — the browser does not tell the page why, deliberately. So this
+    // cannot distinguish "the proxy is down" from "the proxy refused this
+    // origin", and the message says both rather than guessing one.
     throw new ProxyError("offline", (err as Error).message);
   }
   if (!response.ok) throw await readError(response);
   return response;
+}
+
+/**
+ * Wake the proxy, and find out whether it is there.
+ *
+ * On a host that scales to zero the first real request pays the whole cold
+ * start — up to about a minute on Render's free tier — and it pays it at the
+ * worst moment, after someone has filled in a form and pressed a button. This
+ * runs on page load instead, in parallel with Pyodide's 1.3 s preparation, so
+ * the wait overlaps work the visitor was already doing.
+ *
+ * Failure is not an error: it returns null and the app carries on. A warm-up
+ * that could break the page would be worse than no warm-up.
+ */
+export async function pingProxy(signal?: AbortSignal): Promise<Record<string, unknown> | null> {
+  try {
+    const response = await fetch(apiUrl("/api/health"), { signal, credentials: "omit" });
+    if (!response.ok) return null;
+    return (await response.json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
 }
 
 export async function listFilings(

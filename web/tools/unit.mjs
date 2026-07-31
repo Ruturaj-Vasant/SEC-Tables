@@ -17,13 +17,20 @@ const OUT = join(WEB, "dist-test");
 
 rmSync(OUT, { recursive: true, force: true });
 await build({
-  entryPoints: [join(WEB, "app", "test", "domain.test.ts")],
+  entryPoints: [
+    join(WEB, "app", "test", "domain.test.ts"),
+    join(WEB, "app", "test", "config.test.ts"),
+  ],
   outdir: OUT,
   bundle: true,
   format: "esm",
   platform: "node",
   target: "node20",
   external: ["node:*"],
+  // The same substitution the app build makes. Without it the bundle carries a
+  // bare `__SEC_TABLES_API_BASE__`, which is legal only because `typeof` on an
+  // undeclared name does not throw — a detail no test should depend on.
+  define: { __SEC_TABLES_API_BASE__: JSON.stringify(process.env.SEC_TABLES_API_BASE ?? "") },
   logLevel: "warning",
 });
 
