@@ -6,6 +6,13 @@ Three disclosure tables supported today, each defined as *data* rather than code
 Summary Compensation (Item 402(c)/(b)), Director Compensation (402(r)) and
 Beneficial Ownership (403).
 
+**Try it without installing anything:**
+[ruturaj-vasant.github.io/SEC-Tables](https://ruturaj-vasant.github.io/SEC-Tables/)
+— enter a ticker and a year, and this same library extracts the table in your
+browser, in Python, via WebAssembly. A small server fetches the filing from SEC
+because a page cannot (`web/README.md` explains why, with measurements);
+everything after that runs in your tab.
+
 Extracting a Summary Compensation Table is not a parsing problem, it is a
 *selection* problem. A proxy statement contains hundreds of tables, several of
 which look almost exactly like the one you want. This library scores every

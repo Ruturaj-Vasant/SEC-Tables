@@ -1,0 +1,54 @@
+# Render Blueprint for the SEC filing proxy.
+#
+# Why Render, and why this shape — the full comparison is DECISIONS D40. The
+# short version: this is the only candidate where "one instance" is a property of
+# the plan rather than a setting that can be exceeded, it runs Python without a
+# container, and the free tier costs nothing. What it costs instead is a cold
+# start of roughly a minute after 15 minutes of no traffic, and a filesystem that
+# does not survive one. Both are real; neither is hidden. See web/README.md.
+#
+# Deploy: Render dashboard -> New -> Blueprint -> point at this repository.
+# Nothing here is a secret; the one value that must be set by hand is the
+# frontend origin, and it is a public URL.
+
+services:
+  - type: web
+    name: sec-tables-proxy
+    runtime: python
+    plan: free
+    # The proxy imports sec_tables from this repository's src/, so the build
+    # installs the library itself rather than a published wheel — the deployed
+    # proxy is then provably the same code as the checkout and the test suite.
+    buildCommand: pip install --upgrade pip && pip install .
+    # --host is not passed: resolve_host() binds 0.0.0.0 exactly when the
+    # platform set PORT, which is what a container needs and what a laptop must
+    # not do by default.
+    startCommand: python -m sec_proxy.server --cache-dir /tmp/sec-tables-cache
+    healthCheckPath: /api/health
+    # Free web services do not scale, so the process-wide SEC rate limiter in
+    # core.py is genuinely process-wide. Recorded here because that stops being
+    # true the moment this becomes a paid plan with more than one instance, and
+    # the limiter has no shared backing store.
+    numInstances: 1
+    autoDeploy: false
+    envVars:
+      - key: PYTHONPATH
+        value: web/proxy
+      - key: PYTHON_VERSION
+        value: "3.13"
+      # The one value an operator must set. Comma-separated origins; it REPLACES
+      # the default rather than extending it, so a fork does not inherit this
+      # project's Pages origin.
+      - key: SEC_TABLES_ALLOWED_ORIGINS
+        value: https://ruturaj-vasant.github.io
+      # Render terminates TLS and forwards, so the socket peer is Render's proxy
+      # and the client address has to come from X-Forwarded-For. Correct here and
+      # wrong on a directly-exposed host — see limits.py.
+      - key: SEC_TABLES_TRUST_FORWARDED
+        value: "1"
+      - key: SEC_TABLES_RATE_LIMIT
+        value: "60"
+      - key: SEC_TABLES_RATE_WINDOW
+        value: "300"
+      - key: SEC_TABLES_MAX_IN_FLIGHT
+        value: "8"

@@ -1,9 +1,9 @@
-name: Deploy web preview to GitHub Pages
+name: Deploy web app to GitHub Pages
 
 on:
   workflow_dispatch:
   push:
-    branches: [main, live-web-mvp]
+    branches: [main, live-web-mvp, live-proxy-deploy]
     paths:
       - "web/**"
       - ".github/workflows/pages.yml"
@@ -31,10 +31,28 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Install and build
         working-directory: web
+        env:
+          # The hosted SEC proxy this build talks to. A repository *variable*,
+          # not a secret: it is a public URL that ships inside a bundle any
+          # visitor can read, and storing it as a secret would imply a
+          # confidentiality it does not have.
+          #
+          # Set it at Settings -> Secrets and variables -> Actions -> Variables.
+          # Left unset, the build still succeeds and the deployed page says
+          # plainly that it has no filing server — which is the truth, and better
+          # than silently requesting /api/filings from a static host.
+          SEC_TABLES_API_BASE: ${{ vars.SEC_TABLES_API_BASE }}
         run: |
           npm ci
           npm run vendor
           npm run build
+      - name: Report what this build points at
+        run: |
+          if [ -n "${{ vars.SEC_TABLES_API_BASE }}" ]; then
+            echo "::notice::Frontend built against proxy ${{ vars.SEC_TABLES_API_BASE }}"
+          else
+            echo "::warning::SEC_TABLES_API_BASE is unset. The deployed page will render and extract, but cannot fetch filings. Set the repository variable to the hosted proxy URL."
+          fi
       - name: Assemble static site
         working-directory: web
         run: |

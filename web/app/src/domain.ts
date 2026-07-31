@@ -82,7 +82,11 @@ export type ProxyErrorKind =
   | "throttled"
   | "upstream_failure"
   | "internal"
-  | "offline";
+  | "offline"
+  /** The proxy served a response, and refused this page's origin. */
+  | "origin_not_allowed"
+  /** This build has no proxy URL at all. A deployment fault, not a request one. */
+  | "not_configured";
 
 export interface ProxyErrorShape {
   kind: ProxyErrorKind;
@@ -149,7 +153,20 @@ export function describeProxyError(error: ProxyErrorShape): string {
     case "invalid_input":
       return error.message;
     case "offline":
-      return "Could not reach the filing server.";
+      // Deliberately two possibilities rather than one confident guess: a
+      // cross-origin refusal and an unreachable host are the same opaque
+      // `TypeError` to a page, and the browser will not say which.
+      return (
+        "Could not reach the filing server. It may be starting up, or it may not " +
+        "be serving this page's origin — check its health endpoint and try again."
+      );
+    case "origin_not_allowed":
+      return (
+        "The filing server refused this page's origin. That is a configuration " +
+        "mismatch between where this page is hosted and what the proxy allows."
+      );
+    case "not_configured":
+      return error.message;
     case "upstream_failure":
     case "internal":
     default:

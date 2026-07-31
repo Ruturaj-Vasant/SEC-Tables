@@ -19,17 +19,78 @@ npm run dev            # the app on http://127.0.0.1:5199/app.html (fetches from
 npm run dev:fake       # the same app, served committed fixtures, no network
 ```
 
-### GitHub Pages preview
+## Deploying it
 
-`.github/workflows/pages.yml` builds the interface, pinned Pyodide runtime and
-sec-tables wheel into a Pages artifact. In repository settings, choose
-**Pages → Build and deployment → GitHub Actions**. The workflow supports a
-manual run and deploys pushes to `live-web-mvp` or `main`.
+Two hosts, because GitHub Pages is static and cannot run `web/proxy/`.
 
-GitHub Pages is static hosting: it can display the complete interface and ship
-the browser extraction runtime, but it cannot run `web/proxy/`. Consequently,
-the hosted preview is for reviewing the design until the SEC proxy is deployed
-separately. Localhost remains the complete live workflow.
+```
+GitHub Pages ──HTTPS──► a small Python proxy ──► SEC EDGAR
+  React + Pyodide         fetch + cache only
+  extraction runs here
+```
+
+### 1. The proxy
+
+`render.yaml` is a Render Blueprint: **New → Blueprint** in the Render dashboard,
+point it at this repository. Nothing in it is a secret. The one value to review
+is `SEC_TABLES_ALLOWED_ORIGINS`, which must name the frontend's origin —
+`https://<account>.github.io`, not the repository path, because a Pages *project*
+site shares its owner's origin.
+
+Then confirm it is up:
+
+```bash
+curl https://<your-service>.onrender.com/api/health
+```
+
+Why Render, and what it costs, is DECISIONS D40. The short version:
+
+- **Free**, and on the free plan "one instance" is a property of the plan rather
+  than a setting. That matters here specifically: `core.py`'s SEC rate limiter is
+  process-local, so a second replica would be a second full request budget
+  against a ceiling that is per requester.
+- **~60 s cold start** after 15 minutes of no traffic. The app pings
+  `/api/health` on load so the wait overlaps Pyodide's 1.3 s preparation and the
+  time spent typing — which helps, and does not eliminate it.
+- **Ephemeral filesystem.** The filing cache does not survive a restart or a
+  redeploy, so each restart costs one re-fetch per filing anyone asks for again.
+  At this traffic that is a handful of SEC requests, which is why no paid volume
+  is attached. `/api/health` reports `filingsPersistent: false`; nothing in the
+  system claims otherwise.
+
+Any of Fly.io, Cloud Run or Railway would also work — `PORT`, a health path and
+SIGTERM are the whole contract — but see D40 for why they were not chosen.
+
+### 2. The frontend
+
+In repository settings choose **Pages → Build and deployment → GitHub Actions**,
+then set the repository **variable** (Settings → Secrets and variables → Actions
+→ Variables):
+
+```
+SEC_TABLES_API_BASE = https://<your-service>.onrender.com
+```
+
+A variable rather than a secret on purpose: it is a public URL that ships inside
+a bundle any visitor can read, and storing it as a secret would imply a
+confidentiality it does not have.
+
+The workflow deploys pushes to `main` (and supports a manual run). If the
+variable is unset the build still succeeds, the workflow prints a warning, and
+the deployed page says plainly that it has no filing server — rather than
+requesting `/api/filings` from a static host and reporting the 404 page as
+malformed JSON.
+
+### Running it locally
+
+No configuration and no CORS: `tools/serve.mjs` forwards `/api/*` to the proxy on
+another port, so page and API share an origin. `npm run dev` and everything works.
+
+To point a local build at the deployed proxy instead:
+
+```bash
+SEC_TABLES_API_BASE=https://<your-service>.onrender.com npm run build
+```
 
 ## The application
 
@@ -45,10 +106,13 @@ email → ticker → year → form (DEF 14A) → table
 ```
 
 **Fetching is server-side and extraction is browser-side**, and neither half is
-arbitrary. A page cannot fetch from `sec.gov` — `/Archives` sends no permissive
-CORS header — and cannot identify itself to SEC either, because a browser owns
-its own `User-Agent`. Extraction, by contrast, needs no network at all: the
-library is bytes in, table out. See DECISIONS D29-D30.
+arbitrary. A page cannot fetch from SEC, for three separate measured reasons:
+`www.sec.gov` sends no `Access-Control-Allow-Origin` at all; `data.sec.gov` does
+send `*`, but SEC's edge answers a browser's own User-Agent with 403 and that 403
+carries no CORS header either; and a page cannot supply the identification that
+would fix it, because `fetch()` accepts a `User-Agent`, resolves without error,
+and sends the browser's. Extraction, by contrast, needs no network at all: the
+library is bytes in, table out. See DECISIONS D29-D30 and D38.
 
 The proxy (`proxy/sec_proxy/`) is an HTTP surface over `sec_tables.fetch` and
 adds no filing logic of its own — ticker→CIK, the historical `files[]`
@@ -63,9 +127,31 @@ that it *does* reach SEC, because that is what it is for.
 Asking the visitor for an address is this project's design choice, not an SEC
 rule. SEC asks the *requester* to identify itself with a monitored contact; it
 does not ask websites to collect their visitors' addresses. The alternative — one
-shipped address carrying everyone's traffic — is what D19 rules out. And the
-privacy statement above is about this application's code: it cannot speak for
-hosting providers, reverse proxies or browser extensions.
+shipped address carrying everyone's traffic — is what D19 rules out.
+
+**And the statement above is about this application's code only.** That
+qualification used to be hypothetical and is now concrete: the proxy is hosted,
+which means **the host terminates TLS**, so the request body — which is where the
+address is — is decrypted on their infrastructure. That is true of every provider
+and there is nothing in this repository that can change it. Reverse proxies,
+network intermediaries and browser extensions are outside it too. What is
+testable, and tested, is that *this code* does not put the address in a URL, a
+cache key, a filename, a log line or a response, cross-origin included.
+
+### Abuse protection, and what it does not do
+
+The proxy is public, so one client is stopped from spending everyone's SEC
+budget: 60 requests per 5 minutes per client, plus a cap of 8 requests in flight.
+Over either, the answer is a `throttled` error with `Retry-After`.
+
+This is not security. CORS is enforced by browsers and any script bypasses it;
+the limit has no accounts and cannot tell a second visitor from a second tab; and
+a distributed client defeats it entirely. Behind Render the client address comes
+from `X-Forwarded-For`, which a client can send — correct only because Render
+overwrites it, and `SEC_TABLES_TRUST_FORWARDED` defaults to off for that reason.
+`test_limits.py` includes a test proving the limit *is* defeated when that flag
+is on, because a suite that showed it holding everywhere would be showing
+something false. DECISIONS D42.
 
 ### What the app deliberately does not have
 
@@ -224,18 +310,20 @@ afterwards, which is why `cancel()` is explicit rather than automatic.
 
 ## Verification
 
-**45 browser tests** — 28 for the bridge, 17 for the application — plus 30 unit
-tests and 77 proxy tests. One real browser, the real wheel, no mocked Python
-anywhere.
+**54 browser tests** — 28 for the bridge, 19 for the application, 7 for the
+cross-origin contract — plus 40 unit tests and 127 proxy tests. One real browser,
+the real wheel, no mocked Python anywhere.
 
 ```bash
 cd web
 npm install
 npx playwright install chromium
 
-npm test                                  # 45 Playwright tests (vendor + build first)
-npm run unit                              # 30 unit tests, node, no browser
-npm run test:proxy                        # 77 proxy tests, SEC mocked at its network seam
+npm test                                  # 54 Playwright tests (vendor + build first)
+npm run test:crossorigin                  # the app workflow again, on two origins
+npm run unit                              # 40 unit tests, node, no browser
+npm run typecheck                         # tsc --noEmit
+npm run test:proxy                        # 127 proxy tests, SEC mocked at its network seam
 SEC_LIVE_EMAIL=you@example.com npm run test:live   # opt-in: the one test that calls SEC
 ```
 
@@ -243,6 +331,15 @@ The application suite runs against the **real** proxy with SEC's network seam
 faked, so routing, validation, caching and error mapping are all genuine while
 the filing bytes stay the committed fixtures. `npm run test:live` swaps in the
 real proxy and is the only thing here that touches EDGAR; CI never depends on it.
+
+`npm run test:crossorigin` is the one that covers the deployed shape. It rebuilds
+the frontend against the proxy's own port — a different port is a different
+origin — and re-runs the **entire** application workflow through real Chromium
+preflights: the DAL 1997 acceptance case, the filing chooser, CSV, and the test
+that the contact address never reaches a URL. Reusing the existing suite rather
+than writing a parallel cross-origin one is deliberate; a second copy would drift
+from the first. A footer assertion fails the run if the build quietly came out
+same-origin, which would otherwise let it claim to prove something it had not.
 
 They answer three separate questions:
 

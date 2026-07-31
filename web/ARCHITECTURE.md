@@ -4,20 +4,25 @@ Written before implementation, from the existing graph rather than from a reread
 of the tree. Records what is reused, what is new, and the three constraints that
 shape the split.
 
-## The split
+## The deployed topology
+
+Two hosts, because one of them cannot execute code:
 
 ```
-browser                          server (same origin)            SEC
-─────────────────────────────    ─────────────────────────    ─────────
-React form                       proxy /api/filings   ───────► data.sec.gov
-  email, ticker, year, form,       EdgarSource.list_filings     submissions
-  table                            (+ historical `files` pages)
+GitHub Pages (static)                  Render (Python)                 SEC
+https://ruturaj-vasant.github.io       sec-tables-proxy            ─────────
+        /SEC-Tables/                   one free instance
+─────────────────────────────    ─────────────────────────
+React form                  ──HTTPS──► /api/filings      ──────► data.sec.gov
+  email, ticker, year,        (CORS)     EdgarSource.list_filings   submissions
+  form, table                            (+ historical `files` pages)
         │
-        ├─ POST /api/filings ───► proxy /api/filing    ───────► www.sec.gov
-        │  ◄── filing list         EdgarSource.read              /Archives
-        │                          FilingCache
-        ├─ POST /api/filing ─────►
-        │  ◄── raw bytes + metadata headers
+        ├─ POST /api/filings ────────► /api/filing       ──────► www.sec.gov
+        │  ◄── filing list               EdgarSource.read           /Archives
+        │                                FilingCache (ephemeral)
+        ├─ POST /api/filing ─────────►
+        │  ◄── raw bytes + metadata on headers
+        │      (readable only because of Access-Control-Expose-Headers)
         │
         ├─ sandboxed <iframe>  ← blob: URL of those bytes
         │
@@ -25,7 +30,16 @@ React form                       proxy /api/filings   ───────► d
                                                      (unchanged)
 ```
 
-**Fetching is server-side. Extraction is browser-side.** Nothing else moves.
+**Fetching is server-side. Extraction is browser-side.** Nothing else moves —
+splitting the two hosts changed configuration, not architecture, and that is a
+consequence of D30: the server only locates, downloads and caches.
+
+Locally the picture is one origin, not two: `tools/serve.mjs` forwards `/api/*`
+to the proxy on another port, so development involves no CORS at all. Which shape
+applies is `app/src/config.ts`'s single decision, taken at build time from
+`SEC_TABLES_API_BASE`. A third state exists and is deliberate — a Pages build
+with no proxy configured says so on the page instead of requesting `/api/filings`
+from a static host and reporting the resulting 404 page as malformed JSON.
 
 ## What is reused, unchanged
 
@@ -56,11 +70,31 @@ Two seams make it fit without touching the library:
 
 ## Three constraints, and what each forces
 
-**1. A browser still cannot fetch from SEC.** `www.sec.gov/Archives` sends no
-permissive `Access-Control-Allow-Origin`, so a `fetch()` from a page is blocked
-by CORS before it starts. That has not changed and is not worked around here —
-it is the reason a server sits in the path at all. Related: a page cannot make an
-honest SEC User-Agent declaration, because the browser controls that header.
+**1. A browser still cannot fetch from SEC — re-measured, and the old wording
+was too broad.** *(Revised. This section previously said SEC serves no permissive
+CORS, which was only ever true of `www.sec.gov`. See DECISIONS D38 and R10 for
+the response headers and the browser results.)*
+
+Three findings, each independently sufficient:
+
+| | |
+| --- | --- |
+| `www.sec.gov` (`/Archives/`, `/files/`) | sends **no** `Access-Control-Allow-Origin`. A `fetch()` is blocked before it starts. |
+| `data.sec.gov` (submissions, pagination) | sends `Access-Control-Allow-Origin: *` — but SEC's edge answers a browser's own User-Agent with **403**, and the 403 has no CORS header, so a page cannot read even the refusal. |
+| A page fixing that | impossible, and it fails quietly: `fetch()` accepts a `User-Agent` header, resolves normally, and sends Chromium's. |
+
+The second and third survive any future CORS change on `www.sec.gov`, which the
+first would not. This is not worked around here — it is the reason a server sits
+in the path at all.
+
+**1b. Which is why the proxy's own CORS matters.** Now that the two halves are on
+different origins, every call is cross-origin, and the non-obvious part is
+`Access-Control-Expose-Headers`: a cross-origin `fetch()` may read seven response
+headers, and `X-Filing-Meta` is not one of them. Without it the filing bytes
+arrive and the app has nothing to label them with. The policy is an allowlist,
+never `*` — not for confidentiality (there are no credentials to protect) but
+because this server holds one shared SEC request budget. `cors.py` says so at
+length, including that CORS is not authentication and does not pretend to be.
 
 **2. A contact goes to SEC; asking the visitor for it is our choice.**
 *(Revised — the earlier text here said the visitor's email was "SEC's
