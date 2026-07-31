@@ -70,6 +70,17 @@ export function FilingForm(props: Props) {
         props.onFind();
       }}
     >
+      <div className="form-intro">
+        <span className="eyebrow">SEC disclosure explorer</span>
+        <h1>Extract an SEC disclosure table</h1>
+        <p>
+          Choose a company, filing year and table. This server downloads the filing;
+          Python extracts and normalizes it in your browser.
+        </p>
+      </div>
+
+      <div className="form-divider" />
+
       <Field
         id="email"
         label="Contact email"
@@ -87,13 +98,10 @@ export function FilingForm(props: Props) {
           // application does — it cannot speak for hosting, intermediaries or
           // whatever else is between a browser and a server.
           <>
-            Sent to SEC in the <code>User-Agent</code> header of the requests this app
-            makes for you. Asking for your address is this app's design choice, not an
-            SEC rule: SEC asks the requester to identify itself with a monitored contact,
-            and this app passes yours through rather than shipping one shared address.{" "}
-            <strong>The application does not intentionally store or log it.</strong> It
-            cannot make guarantees about hosting providers, network intermediaries or
-            browser extensions.
+            Sent to SEC in the <code>User-Agent</code> header. Asking for your address is
+            this app's design choice, not an SEC rule. The application does not
+            intentionally store or log it; hosting providers, intermediaries and browser
+            extensions are outside that promise.
           </>
         }
       >
@@ -185,15 +193,24 @@ export function FilingForm(props: Props) {
       ) : null}
 
       <div className="actions">
-        <button type="submit" disabled={props.busy}>
-          Find filing
+        <button type="submit" className="primary-action" disabled={props.busy}>
+          <span aria-hidden="true">⌕</span> Find filing
         </button>
-        <button type="button" onClick={props.onExtract} disabled={!props.canExtract}>
-          Extract table
+        <button type="button" className="extract-action" onClick={props.onExtract} disabled={!props.canExtract}>
+          <span aria-hidden="true">▤</span> Extract table
         </button>
         <button type="button" className="secondary" onClick={props.onCancel} disabled={!props.busy}>
           Cancel
         </button>
+      </div>
+
+      <div className="supported" id="supported">
+        <span>Supported disclosure tables</span>
+        <div className="supported-tags">
+          <span>Executive compensation</span>
+          <span>Director compensation</span>
+          <span>Beneficial ownership</span>
+        </div>
       </div>
     </form>
   );

@@ -80,20 +80,25 @@ export function FilingViewer({ bytes, meta, cached }: Props) {
   }
 
   const kind = looksLikeHtml(bytes!) ? "HTML" : "plain text";
+  const route = meta.route === "complete_submission" ? "Complete submission" : "Primary document";
   return (
     <section className="panel viewer" aria-labelledby="viewer-heading">
       <div className="panel-head">
-        <h2 id="viewer-heading">
-          {meta.ticker} {meta.form} · {meta.filingDate}
-        </h2>
-        <p className="muted">
-          {kind} · {(bytes!.byteLength / 1024).toFixed(0)} KB ·{" "}
-          {meta.route === "complete_submission" ? "complete submission" : "primary document"} ·{" "}
-          {cached ? "from this server's cache" : "fetched from SEC"} ·{" "}
-          <a href={meta.sourceUrl} target="_blank" rel="noreferrer noopener">
-            source on sec.gov
-          </a>
-        </p>
+        <div>
+          <h2 id="viewer-heading">
+            {meta.ticker} {meta.form} <span>·</span> {meta.filingDate}
+          </h2>
+          <p className="muted document-meta">
+            <span>{kind}</span>
+            <span>{(bytes!.byteLength / 1024).toFixed(0)} KB</span>
+            <span>{cached ? "from this server's cache" : "fetched from SEC"}</span>
+            <a href={meta.sourceUrl} target="_blank" rel="noreferrer noopener">
+              source on sec.gov <span aria-hidden="true">↗</span>
+            </a>
+            <span className="sr-only">{route.toLowerCase()}</span>
+          </p>
+        </div>
+        <span className="route-badge">{route}</span>
       </div>
       <iframe
         className="filing-frame"

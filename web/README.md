@@ -19,6 +19,18 @@ npm run dev            # the app on http://127.0.0.1:5199/app.html (fetches from
 npm run dev:fake       # the same app, served committed fixtures, no network
 ```
 
+### GitHub Pages preview
+
+`.github/workflows/pages.yml` builds the interface, pinned Pyodide runtime and
+sec-tables wheel into a Pages artifact. In repository settings, choose
+**Pages → Build and deployment → GitHub Actions**. The workflow supports a
+manual run and deploys pushes to `live-web-mvp` or `main`.
+
+GitHub Pages is static hosting: it can display the complete interface and ship
+the browser extraction runtime, but it cannot run `web/proxy/`. Consequently,
+the hosted preview is for reviewing the design until the SEC proxy is deployed
+separately. Localhost remains the complete live workflow.
+
 ## The application
 
 ```

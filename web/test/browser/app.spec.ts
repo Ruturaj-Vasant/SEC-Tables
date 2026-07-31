@@ -398,6 +398,16 @@ test("nothing on the page claims the result is verified or accurate", async ({ a
   expect(text).toContain("heuristic");
 });
 
+test("the product shell does not invent uploads, branding, or client-only fetching", async ({ app }) => {
+  const text = (await app.locator("body").innerText()).toLowerCase();
+  expect(await app.locator('input[type="file"]').count()).toBe(0);
+  expect(text).not.toContain("ibm");
+  expect(text).not.toContain("100% client-side");
+  expect(text).not.toContain("file never leaves your device");
+  expect(text).toContain("this server downloads the filing");
+  expect(text).toContain("python extracts and normalizes it in your browser");
+});
+
 test("the contact field is honest about the address before it is typed", async ({ app }) => {
   const hint = app.locator("#email-hint");
   // Where it goes, and in what.
@@ -463,6 +473,13 @@ test("the layout reflows on a narrow viewport without horizontal scroll", async 
 });
 
 test("the whole form is reachable and operable from the keyboard", async ({ app }) => {
+  // The product header is keyboard navigation too. Walk through it before the
+  // form rather than making the old, false assertion that the email field is
+  // the first interactive element on the page.
+  for (const name of ["sec-tables home", "How it works", "Supported tables", "Methodology", "GitHub"]) {
+    await app.keyboard.press("Tab");
+    await expect(app.getByRole("link", { name })).toBeFocused();
+  }
   await app.keyboard.press("Tab");
   await expect(app.locator("#email")).toBeFocused();
   await app.keyboard.type(EMAIL);

@@ -40,6 +40,21 @@ const INITIAL: FormValues = {
   table: "summary_compensation",
 };
 
+const STATUS_TITLE: Record<string, string> = {
+  empty: "Ready to search",
+  validating: "Checking your search",
+  finding_filings: "Finding filings",
+  fetching_filing: "Fetching the filing",
+  preparing_python: "Preparing browser extraction",
+  extracting: "Extracting the table",
+  successful: "Extraction complete",
+  needs_review: "Extraction needs review",
+  no_table: "No matching table found",
+  throttled: "SEC is limiting requests",
+  cancelled: "Request cancelled",
+  failed: "Something went wrong",
+};
+
 export function App() {
   const [state, dispatch] = React.useReducer(reducer, initialState(INITIAL));
   // One bridge for the page. It survives cancellation by rebuilding its worker
@@ -48,7 +63,14 @@ export function App() {
   const abortRef = React.useRef<AbortController | null>(null);
 
   const bridge = () => {
-    bridgeRef.current ??= new SecTablesBridge({ workerUrl: WORKER_URL });
+    bridgeRef.current ??= new SecTablesBridge({
+      workerUrl: WORKER_URL,
+      // Resolve from the worker bundle, not the domain root. Locally the worker
+      // is /dist/worker.js; on GitHub Pages it is
+      // /SEC-Tables/dist/worker.js. `../` reaches the correct application root
+      // in both places, while /pyodide/ would escape a Pages project site.
+      location: { pyodideBaseUrl: "../pyodide/", wheelBaseUrl: "../py/" },
+    });
     return bridgeRef.current;
   };
 
@@ -191,20 +213,42 @@ export function App() {
         : ["failed", "throttled", "no_table"].includes(state.status)
           ? "bad"
           : "";
+  const statusTitle =
+    state.status === "empty" && state.filingBytes ? "Filing ready" : STATUS_TITLE[state.status];
+  const statusMessage =
+    state.status === "empty" && state.filingBytes
+      ? "The source document is ready. Choose Extract table to process it in this browser."
+      : state.message ?? STATUS_TEXT[state.status];
 
   return (
-    <div className="app">
-      <header>
-        <h1>sec-tables</h1>
-        <p className="muted">
-          Fetch an SEC filing and read one disclosure table out of it. The filing is
-          downloaded by this site's server; the extraction runs in your browser, in Python,
-          via WebAssembly.
-        </p>
+    <div className="site-shell">
+      <header className="topbar">
+        <a className="brand" href="#workflow" aria-label="sec-tables home">
+          <span className="brand-mark" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span>sec-tables</span>
+        </a>
+        <nav aria-label="Primary navigation">
+          <a href="#workflow">How it works</a>
+          <a href="#supported">Supported tables</a>
+          <a href="#methodology">Methodology</a>
+          <a
+            className="nav-cta"
+            href="https://github.com/Ruturaj-Vasant/SEC-Tables"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            GitHub
+          </a>
+        </nav>
       </header>
 
-      <div className="columns">
-        <div className="left">
+      <main className="app">
+        <div className="columns">
+          <aside className="left search-card" id="workflow">
           <FilingForm
             values={state.values}
             errors={state.errors}
@@ -218,36 +262,64 @@ export function App() {
             onExtract={onExtract}
             onCancel={onCancel}
           />
+          </aside>
 
-          <p
-            className={`status ${statusClass}`}
-            data-status={state.status}
-            data-testid="status"
-            role="status"
-            aria-live="polite"
-          >
-            {busy ? <span className="spinner" aria-hidden="true" /> : null}
-            {state.message ?? STATUS_TEXT[state.status]}
-          </p>
+          <div className="right">
+            <div
+              className={`status ${statusClass}`}
+              data-status={state.status}
+              data-testid="status"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="status-icon" aria-hidden="true">
+                {busy ? <span className="spinner" /> : state.status === "successful" ? "✓" : "i"}
+              </span>
+              <span className="status-copy">
+                <strong>{statusTitle}</strong>
+                <span>{statusMessage}</span>
+              </span>
+            </div>
 
-          {state.recoveredFromTimeout ? (
-            <p className="callout bad" role="alert">
-              The Python runtime was terminated and rebuilt. The next extraction starts from a
-              cold runtime.
-            </p>
-          ) : null}
+            {state.recoveredFromTimeout ? (
+              <p className="callout bad" role="alert">
+                The Python runtime was terminated and rebuilt. The next extraction starts from a
+                cold runtime.
+              </p>
+            ) : null}
+
+            <FilingViewer bytes={state.filingBytes} meta={state.filingMeta} cached={state.filingCached} />
+            <ResultTable result={state.result} meta={state.filingMeta} />
+          </div>
         </div>
 
-        <div className="right">
-          <FilingViewer bytes={state.filingBytes} meta={state.filingMeta} cached={state.filingCached} />
-          <ResultTable result={state.result} meta={state.filingMeta} />
-        </div>
-      </div>
+        <section className="trust-strip" id="methodology" aria-label="How sec-tables works">
+          <div>
+            <span className="trust-icon" aria-hidden="true">⌁</span>
+            <p><strong>Browser extraction</strong><span>Python processes the filing in your tab.</span></p>
+          </div>
+          <div>
+            <span className="trust-icon" aria-hidden="true">◇</span>
+            <p><strong>Safe document viewer</strong><span>SEC filings open in an isolated sandbox.</span></p>
+          </div>
+          <div>
+            <span className="trust-icon" aria-hidden="true">&lt;/&gt;</span>
+            <p><strong>Transparent results</strong><span>Source, backend and provenance stay visible.</span></p>
+          </div>
+          <div>
+            <span className="trust-icon" aria-hidden="true">!</span>
+            <p><strong>Review-aware</strong><span>Uncertain results are flagged, not hidden.</span></p>
+          </div>
+        </section>
 
-      <footer className="muted">
-        Not affiliated with, endorsed by, or connected to the U.S. Securities and Exchange
-        Commission. Extraction is heuristic — verify anything you rely on against the filing.
-      </footer>
+        <footer>
+          <span>Open-source SEC table extraction.</span>
+          <span className="muted">
+            Not affiliated with or endorsed by the U.S. Securities and Exchange Commission.
+            Extraction is heuristic — verify anything you rely on against the filing.
+          </span>
+        </footer>
+      </main>
     </div>
   );
 }

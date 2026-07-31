@@ -98,7 +98,7 @@ export function ResultTable({ result, meta }: Props) {
             download={csvFilename(meta, result.profile)}
             data-testid="download-csv"
           >
-            Download CSV
+            <span aria-hidden="true">⇩</span> Download CSV
           </a>
         ) : null}
       </div>
@@ -183,28 +183,33 @@ export function ResultTable({ result, meta }: Props) {
       <FlagList title="Other" kind="other" flags={other} />
 
       {result.ok ? (
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                {result.columns.map((c, i) => (
-                  <th key={`${c}-${i}`} scope="col">
-                    {c}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {result.rows.map((row, r) => (
-                <tr key={r}>
-                  {result.columns.map((_, c) => (
-                    <td key={c}>{row[c] ?? ""}</td>
+        <>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  {result.columns.map((c, i) => (
+                    <th key={`${c}-${i}`} scope="col">
+                      {c}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {result.rows.map((row, r) => (
+                  <tr key={r}>
+                    {result.columns.map((_, c) => (
+                      <td key={c}>{row[c] ?? ""}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="table-caption">
+            Showing all {result.rows.length} extracted rows. Download the CSV for the same canonical data.
+          </p>
+        </>
       ) : (
         <p className="muted">
           No table of this type cleared the score threshold in this filing. Many plain-text
