@@ -1,0 +1,24 @@
+{
+  "name": "sec-tables-pyodide-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Typed Web Worker bridge that runs sec-tables 0.3.0 in Pyodide. No UI, no SEC networking.",
+  "scripts": {
+    "vendor": "node tools/vendor-pyodide.mjs",
+    "wheel": "node tools/build-wheel.mjs",
+    "build": "node tools/build.mjs",
+    "serve": "node tools/serve.mjs",
+    "typecheck": "tsc --noEmit",
+    "pretest": "npm run vendor && npm run build",
+    "test": "playwright test",
+    "measure": "node tools/measure.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^26.1.2",
+    "esbuild": "^0.25.0",
+    "pyodide": "314.0.3",
+    "typescript": "^5.9.0"
+  }
+}

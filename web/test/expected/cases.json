@@ -1,0 +1,1190 @@
+{
+  "aapl_2003_sct_stacked": {
+    "documentBytes": 6881,
+    "expected": {
+      "backend": "dom",
+      "columns": [
+        "name",
+        "position",
+        "year",
+        "salary",
+        "annual_compensation",
+        "bonus",
+        "options_sars",
+        "all_other_comp"
+      ],
+      "era": "pre2006",
+      "flags": [],
+      "metadata": {
+        "candidates": 1,
+        "margin": null,
+        "profile": "summary_compensation",
+        "rows_before_assembly": 26,
+        "top_score": 16
+      },
+      "ok": true,
+      "profile": "summary_compensation",
+      "provenance": [],
+      "reviewRequired": false,
+      "rows": [
+        [
+          "Steven P. Jobs",
+          "Chief Executive Officer",
+          "2002",
+          "1",
+          "",
+          "2268698",
+          "7500000",
+          "1302795"
+        ],
+        [
+          "Steven P. Jobs",
+          "Chief Executive Officer Steven P. Jobs",
+          "2001",
+          "1",
+          "",
+          "43511534",
+          "",
+          "40484594"
+        ],
+        [
+          "Steven P. Jobs",
+          "Chief Executive Officer Steven P. Jobs",
+          "2000",
+          "1",
+          "",
+          "",
+          "20000000",
+          ""
+        ],
+        [
+          "Fred D. Anderson",
+          "Executive Vice President and Chief Financial Officer",
+          "2002",
+          "656631",
+          "",
+          "",
+          "",
+          "11000"
+        ],
+        [
+          "Fred D. Anderson",
+          "Executive Vice President and Chief Financial Officer Fred D. Anderson",
+          "2001",
+          "657039",
+          "",
+          "",
+          "1000000",
+          "7312"
+        ],
+        [
+          "Fred D. Anderson",
+          "Executive Vice President and Chief Financial Officer Fred D. Anderson",
+          "2000",
+          "660414",
+          "",
+          "",
+          "",
+          "6750"
+        ],
+        [
+          "Timothy D. Cook",
+          "Executive Vice President, Worldwide Sales and Operations",
+          "2002",
+          "563829",
+          "",
+          "",
+          "",
+          "8025"
+        ],
+        [
+          "Timothy D. Cook",
+          "Executive Vice President, Worldwide Sales and Operations Timothy D. Cook",
+          "2001",
+          "452219",
+          "",
+          "500000",
+          "1000000",
+          "7875"
+        ],
+        [
+          "Timothy D. Cook",
+          "Executive Vice President, Worldwide Sales and Operations Timothy D. Cook",
+          "2000",
+          "451673",
+          "",
+          "",
+          "",
+          "6352"
+        ],
+        [
+          "Jonathan Rubinstein",
+          "Senior Vice President, Hardware Engineering",
+          "2002",
+          "452588",
+          "",
+          "",
+          "",
+          "9996"
+        ],
+        [
+          "Jonathan Rubinstein",
+          "Senior Vice President, Hardware Engineering Jonathan Rubinstein",
+          "2001",
+          "469737",
+          "",
+          "",
+          "1000000",
+          "7875"
+        ],
+        [
+          "Jonathan Rubinstein",
+          "Senior Vice President, Hardware Engineering Jonathan Rubinstein",
+          "2000",
+          "451949",
+          "",
+          "",
+          "",
+          "6577"
+        ],
+        [
+          "Avadis Tevanian, Jr. Ph.D",
+          "Senior Vice President, Software Engineering",
+          "2002",
+          "492212",
+          "",
+          "",
+          "",
+          "10700"
+        ],
+        [
+          "Avadis Tevanian, Jr. Ph.D",
+          "Senior Vice President, Software Engineering Avadis Tevanian, Jr. Ph.D",
+          "2001",
+          "460873",
+          "",
+          "500",
+          "1000000",
+          "10200"
+        ],
+        [
+          "Avadis Tevanian, Jr. Ph.D",
+          "Senior Vice President, Software Engineering Avadis Tevanian, Jr. Ph.D",
+          "2000",
+          "451673",
+          "",
+          "",
+          "",
+          "10200"
+        ]
+      ],
+      "schemaVersion": 1
+    },
+    "filingDate": "2003-03-24",
+    "profile": "summary_compensation",
+    "url": "/fixtures/aapl_2003_sct_stacked.html"
+  },
+  "abcp_1997_review_flags": {
+    "documentBytes": 49277,
+    "expected": {
+      "backend": "sgml",
+      "columns": [
+        "name",
+        "position",
+        "restricted_stock_awards",
+        "ltip_payouts"
+      ],
+      "era": "pre2006",
+      "flags": [
+        "ambiguous_selection",
+        "sgml_source",
+        "missing_required_columns"
+      ],
+      "metadata": {
+        "candidates": 5,
+        "margin": 0,
+        "missing_roles": [
+          "year"
+        ],
+        "profile": "summary_compensation",
+        "rows_before_assembly": 11,
+        "top_score": 14
+      },
+      "ok": true,
+      "profile": "summary_compensation",
+      "provenance": [
+        "sgml_source"
+      ],
+      "reviewRequired": true,
+      "rows": [
+        [
+          "Richard A. Bianco - 1996(4) $500,000 $825,000 $9,392",
+          "Chairman,President 1995 $500,000 $425,000 $8,732 and Chief Executive 1994 $500,000 $250,000 $9,295 Officer of the Company John P. Ferrara - 1996 $95,000 $30,000 $1,076 Vice President, 1995 $90,000 $30,000 $1,157 Chief Financial 1994 $90,000 $10,000 $1,182 Officer, Treasurer & Controller of the",
+          "",
+          "8387"
+        ],
+        [
+          "Richard A. Bianco - 1996(4) $500,000 $825,000 $9,392",
+          "Chairman,President 1995 $500,000 $425,000 $8,732 and Chief Executive 1994 $500,000 $250,000 $9,295 Officer of the Company John P. Ferrara - 1996 $95,000 $30,000 $1,076 Vice President, 1995 $90,000 $30,000 $1,157 Chief Financial 1994 $90,000 $10,000 $1,182 Officer, Treasurer & Controller of the",
+          "500000",
+          "7317"
+        ],
+        [
+          "Richard A. Bianco - 1996(4) $500,000 $825,000 $9,392",
+          "Chairman,President 1995 $500,000 $425,000 $8,732 and Chief Executive 1994 $500,000 $250,000 $9,295 Officer of the Company John P. Ferrara - 1996 $95,000 $30,000 $1,076 Vice President, 1995 $90,000 $30,000 $1,157 Chief Financial 1994 $90,000 $10,000 $1,182 Officer, Treasurer & Controller of the",
+          "",
+          "8084"
+        ],
+        [
+          "Richard A. Bianco - 1996(4) $500,000 $825,000 $9,392",
+          "Chairman,President 1995 $500,000 $425,000 $8,732 and Chief Executive 1994 $500,000 $250,000 $9,295 Officer of the Company John P. Ferrara - 1996 $95,000 $30,000 $1,076 Vice President, 1995 $90,000 $30,000 $1,157 Chief Financial 1994 $90,000 $10,000 $1,182 Officer, Treasurer & Controller of the",
+          "",
+          "4450"
+        ],
+        [
+          "Richard A. Bianco - 1996(4) $500,000 $825,000 $9,392",
+          "Chairman,President 1995 $500,000 $425,000 $8,732 and Chief Executive 1994 $500,000 $250,000 $9,295 Officer of the Company John P. Ferrara - 1996 $95,000 $30,000 $1,076 Vice President, 1995 $90,000 $30,000 $1,157 Chief Financial 1994 $90,000 $10,000 $1,182 Officer, Treasurer & Controller of the",
+          "100000",
+          "4001"
+        ],
+        [
+          "Richard A. Bianco - 1996(4) $500,000 $825,000 $9,392",
+          "Chairman,President 1995 $500,000 $425,000 $8,732 and Chief Executive 1994 $500,000 $250,000 $9,295 Officer of the Company John P. Ferrara - 1996 $95,000 $30,000 $1,076 Vice President, 1995 $90,000 $30,000 $1,157 Chief Financial 1994 $90,000 $10,000 $1,182 Officer, Treasurer & Controller of the",
+          "",
+          "4032"
+        ]
+      ],
+      "schemaVersion": 1
+    },
+    "filingDate": "1997-02-27",
+    "profile": "summary_compensation",
+    "url": "/assets/abcp_1997_review_flags.txt"
+  },
+  "alk_1994_sgml_sct": {
+    "documentBytes": 58198,
+    "expected": {
+      "backend": "sgml",
+      "columns": [
+        "name",
+        "position",
+        "year",
+        "salary",
+        "bonus",
+        "other_annual_comp",
+        "long_term_awards_tricted_stock_d",
+        "ltip_payouts",
+        "ltip_payouts_2",
+        "all_other_comp"
+      ],
+      "era": "pre2006",
+      "flags": [
+        "sgml_source"
+      ],
+      "metadata": {
+        "candidates": 9,
+        "margin": 6,
+        "profile": "summary_compensation",
+        "rows_before_assembly": 18,
+        "top_score": 14
+      },
+      "ok": true,
+      "profile": "summary_compensation",
+      "provenance": [
+        "sgml_source"
+      ],
+      "reviewRequired": false,
+      "rows": [
+        [
+          "Raymond J. Vecci",
+          "Chairman, CEO and President (Alaska)",
+          "1993",
+          "300000",
+          "0",
+          "",
+          "0",
+          "11900",
+          "0",
+          "9681"
+        ],
+        [
+          "Raymond J. Vecci",
+          "Chairman, CEO and President (Alaska)",
+          "1992",
+          "288924",
+          "0",
+          "",
+          "0",
+          "5000",
+          "0",
+          "6228"
+        ],
+        [
+          "Raymond J. Vecci",
+          "Chairman, CEO and President (Alaska)",
+          "1991",
+          "253807",
+          "0",
+          "",
+          "0",
+          "0",
+          "0",
+          ""
+        ],
+        [
+          "Patrick L. Glenn",
+          "Exec. Vice President and COO (Alaska)",
+          "1993",
+          "242481",
+          "0",
+          "",
+          "0",
+          "9000",
+          "0",
+          "9372"
+        ],
+        [
+          "Patrick L. Glenn",
+          "Exec. Vice President and COO (Alaska)",
+          "1992",
+          "218076",
+          "0",
+          "",
+          "0",
+          "0",
+          "0",
+          "6932"
+        ],
+        [
+          "Patrick L. Glenn",
+          "Exec. Vice President and COO (Alaska)",
+          "1991",
+          "193269",
+          "0",
+          "",
+          "0",
+          "0",
+          "0",
+          ""
+        ],
+        [
+          "J. Ray Vingo",
+          "Vice President/Finance and CFO (Alaska)",
+          "1993",
+          "205788",
+          "0",
+          "",
+          "0",
+          "7800",
+          "0",
+          "10029"
+        ],
+        [
+          "J. Ray Vingo",
+          "Vice President/Finance and CFO (Alaska)",
+          "1992",
+          "190846",
+          "0",
+          "",
+          "0",
+          "0",
+          "0",
+          "6759"
+        ],
+        [
+          "J. Ray Vingo",
+          "Vice President/Finance and CFO (Alaska)",
+          "1991",
+          "174615",
+          "0",
+          "",
+          "0",
+          "0",
+          "0",
+          ""
+        ],
+        [
+          "John F. Kelly",
+          "Chairman, CEO and President (Horizon)",
+          "1993",
+          "187115",
+          "0",
+          "",
+          "0",
+          "7200",
+          "0",
+          "11419"
+        ],
+        [
+          "John F. Kelly",
+          "Chairman, CEO and President (Horizon)",
+          "1992",
+          "173755",
+          "21270",
+          "",
+          "0",
+          "0",
+          "0",
+          "10128"
+        ],
+        [
+          "John F. Kelly",
+          "Chairman, CEO and President (Horizon)",
+          "1991",
+          "155000",
+          "65210",
+          "",
+          "0",
+          "0",
+          "0",
+          ""
+        ],
+        [
+          "Willie G. McKnight, Jr.",
+          "Vice President/ Marketing (Alaska)",
+          "1993",
+          "162193",
+          "0",
+          "",
+          "0",
+          "6200",
+          "0",
+          "991"
+        ],
+        [
+          "Willie G. McKnight, Jr.",
+          "Vice President/ Marketing (Alaska)",
+          "1992",
+          "150845",
+          "0",
+          "",
+          "0",
+          "0",
+          "0",
+          "712"
+        ],
+        [
+          "Willie G. McKnight, Jr.",
+          "Vice President/ Marketing (Alaska)",
+          "1991",
+          "136009",
+          "0",
+          "",
+          "0",
+          "0",
+          "0",
+          ""
+        ],
+        [
+          "James A. Johnson",
+          "Senior Vice President/ Public Affairs (Alaska)",
+          "1992",
+          "145015",
+          "0",
+          "",
+          "0",
+          "0",
+          "0",
+          "7381"
+        ],
+        [
+          "James A. Johnson",
+          "Senior Vice President/ Public Affairs (Alaska)",
+          "1991",
+          "130115",
+          "0",
+          "",
+          "0",
+          "0",
+          "0",
+          ""
+        ]
+      ],
+      "schemaVersion": 1
+    },
+    "filingDate": "1994-03-31",
+    "profile": "summary_compensation",
+    "url": "/assets/alk_1994_sgml_sct.txt"
+  },
+  "azz_2019_ownership": {
+    "documentBytes": 17195,
+    "expected": {
+      "backend": "dom",
+      "columns": [
+        "holder_name",
+        "holder_address",
+        "section",
+        "is_group",
+        "shares",
+        "percent"
+      ],
+      "era": "single",
+      "flags": [],
+      "metadata": {
+        "candidates": 2,
+        "margin": 3,
+        "profile": "beneficial_ownership",
+        "rows_before_assembly": 10,
+        "top_score": 15
+      },
+      "ok": true,
+      "profile": "beneficial_ownership",
+      "provenance": [],
+      "reviewRequired": false,
+      "rows": [
+        [
+          "BlackRock, Inc.",
+          "55 East 52 nd Street New York, NY 10055",
+          "",
+          "0",
+          "3765728",
+          "14.5"
+        ],
+        [
+          "The Vanguard Group, Inc.",
+          "100 Vanguard Blvd. Malvern, PA 19355",
+          "",
+          "0",
+          "2619321",
+          "10.04"
+        ],
+        [
+          "Neuberger Berman Group LLC Neuberger Berman Investment Advisers LLC Neuberger Berman Equity Funds Neuberger Berman Genesis Fund",
+          "1290 Avenue of the Americas New York, NY 10104",
+          "",
+          "0",
+          "1844391",
+          "7.08"
+        ],
+        [
+          "T. Rowe Price Associates, Inc.",
+          "100 East Pratt Street Baltimore, MD 21202",
+          "",
+          "0",
+          "1853610",
+          "7.1"
+        ],
+        [
+          "Van Berkom & Associates Inc.",
+          "1130 Sherbrooke Street West, Suite 1005 Montreal, Quebec H3A 2M8",
+          "",
+          "0",
+          "1405056",
+          "5.39"
+        ]
+      ],
+      "schemaVersion": 1
+    },
+    "filingDate": "2019-05-28",
+    "profile": "beneficial_ownership",
+    "url": "/fixtures/azz_2019_ownership.html"
+  },
+  "cmp_2024_director_comp": {
+    "documentBytes": 17748,
+    "expected": {
+      "backend": "dom",
+      "columns": [
+        "name",
+        "position",
+        "fees_earned",
+        "stock_awards",
+        "total"
+      ],
+      "era": "single",
+      "flags": [],
+      "metadata": {
+        "candidates": 3,
+        "margin": 1,
+        "profile": "director_compensation",
+        "rows_before_assembly": 10,
+        "top_score": 9
+      },
+      "ok": true,
+      "profile": "director_compensation",
+      "provenance": [],
+      "reviewRequired": false,
+      "rows": [
+        [
+          "Richard P. Dealy",
+          "",
+          "25625",
+          "198859",
+          "224484"
+        ],
+        [
+          "Edward C. Dowling, Jr.",
+          "",
+          "13125",
+          "219493",
+          "232618"
+        ],
+        [
+          "Eric Ford",
+          "",
+          "25625",
+          "189720",
+          "215345"
+        ],
+        [
+          "Jill V. Gardiner",
+          "",
+          "",
+          "136619",
+          "136619"
+        ],
+        [
+          "Gareth T. Joyce",
+          "",
+          "23750",
+          "196311",
+          "220061"
+        ],
+        [
+          "Melissa M. Miller",
+          "",
+          "23750",
+          "197902",
+          "221652"
+        ],
+        [
+          "Joseph E. Reece",
+          "",
+          "",
+          "400085",
+          "400085"
+        ],
+        [
+          "Lori A. Walker",
+          "",
+          "28125",
+          "210082",
+          "238207"
+        ],
+        [
+          "Paul S. Williams",
+          "",
+          "37472",
+          "",
+          "37472"
+        ],
+        [
+          "Amy J. Yoder",
+          "",
+          "39042",
+          "",
+          "39042"
+        ]
+      ],
+      "schemaVersion": 1
+    },
+    "filingDate": "2024-01-29",
+    "profile": "director_compensation",
+    "url": "/fixtures/cmp_2024_director_comp.html"
+  },
+  "cvs_1996_ownership": {
+    "documentBytes": 1226,
+    "expected": {
+      "backend": "ascii",
+      "columns": [
+        "holder_name",
+        "holder_address",
+        "section",
+        "is_group",
+        "share_class",
+        "shares",
+        "percent"
+      ],
+      "era": "single",
+      "flags": [
+        "ascii_source"
+      ],
+      "metadata": {
+        "candidates": 2,
+        "margin": 1012,
+        "profile": "beneficial_ownership",
+        "rows_before_assembly": 12,
+        "top_score": 13
+      },
+      "ok": true,
+      "profile": "beneficial_ownership",
+      "provenance": [
+        "ascii_source"
+      ],
+      "reviewRequired": false,
+      "rows": [
+        [
+          "FMR Corp.(1)",
+          "82 Devonshire Street Boston, MA 02109",
+          "",
+          "0",
+          "Common Stock",
+          "13552054",
+          "12.8"
+        ],
+        [
+          "Brinson Partners, Inc.(2)",
+          "209 S. LaSalle Street, 11th Floor Chicago, IL 60604-1295",
+          "",
+          "0",
+          "Common Stock",
+          "6904354",
+          "6.5"
+        ],
+        [
+          "Melville Corporation and Subsidiaries Employee Stock Ownership Plan Trust c/o Bank of New York, as Trustee(3)",
+          "48 Wall Street New York, NY 10005",
+          "",
+          "0",
+          "Series One ESOP",
+          "5807168",
+          "100"
+        ]
+      ],
+      "schemaVersion": 1
+    },
+    "filingDate": "1996-10-08",
+    "profile": "beneficial_ownership",
+    "url": "/fixtures/cvs_1996_ownership.txt"
+  },
+  "dal_1994_sct": {
+    "documentBytes": 2693,
+    "expected": {
+      "backend": "ascii",
+      "columns": [
+        "name",
+        "position",
+        "year",
+        "salary",
+        "bonus",
+        "other_annual_comp",
+        "restricted_stock_awards",
+        "options_sars",
+        "ltip_payouts",
+        "all_other_comp"
+      ],
+      "era": "pre2006",
+      "flags": [
+        "ascii_source"
+      ],
+      "metadata": {
+        "candidates": 2,
+        "margin": 12,
+        "profile": "summary_compensation",
+        "rows_before_assembly": 15,
+        "top_score": 14
+      },
+      "ok": true,
+      "profile": "summary_compensation",
+      "provenance": [
+        "ascii_source"
+      ],
+      "reviewRequired": false,
+      "rows": [
+        [
+          "Ronald W. Allen",
+          "Chairman of the Board, President and Chief Executive Officer",
+          "1994",
+          "475000",
+          "0",
+          "8528",
+          "0",
+          "89000",
+          "0",
+          "18512"
+        ],
+        [
+          "Ronald W. Allen",
+          "Chairman of the Board, President and Chief Executive Officer",
+          "1993",
+          "487500",
+          "0",
+          "7077",
+          "0",
+          "0",
+          "0",
+          "17639"
+        ],
+        [
+          "Ronald W. Allen",
+          "Chairman of the Board, President and Chief Executive Officer",
+          "1992",
+          "516667",
+          "0",
+          "",
+          "365625",
+          "75000",
+          "0",
+          ""
+        ],
+        [
+          "Harold C. Alger",
+          "Executive Vice President- Operations",
+          "1994",
+          "261250",
+          "0",
+          "4713",
+          "0",
+          "35400",
+          "0",
+          "13416"
+        ],
+        [
+          "Harold C. Alger",
+          "Executive Vice President- Operations",
+          "1993",
+          "221833",
+          "0",
+          "3001",
+          "0",
+          "0",
+          "0",
+          "8867"
+        ],
+        [
+          "Harold C. Alger",
+          "Executive Vice President- Operations",
+          "1992",
+          "193667",
+          "0",
+          "",
+          "109688",
+          "15000",
+          "0",
+          ""
+        ],
+        [
+          "Thomas J. Roeck, Jr.",
+          "Senior Vice President- Finance and Chief Financial Officer",
+          "1994",
+          "261250",
+          "0",
+          "4713",
+          "0",
+          "26300",
+          "0",
+          "13416"
+        ],
+        [
+          "Thomas J. Roeck, Jr.",
+          "Senior Vice President- Finance and Chief Financial Officer",
+          "1993",
+          "263547",
+          "0",
+          "3915",
+          "0",
+          "0",
+          "0",
+          "11803"
+        ],
+        [
+          "Thomas J. Roeck, Jr.",
+          "Senior Vice President- Finance and Chief Financial Officer",
+          "1992",
+          "260417",
+          "0",
+          "",
+          "146250",
+          "25000",
+          "0",
+          ""
+        ],
+        [
+          "Russell H. Heil",
+          "Senior Vice President- Technical Operations",
+          "1994",
+          "251750",
+          "0",
+          "4543",
+          "0",
+          "26300",
+          "0",
+          "13103"
+        ],
+        [
+          "Russell H. Heil",
+          "Senior Vice President- Technical Operations",
+          "1993",
+          "253958",
+          "0",
+          "3774",
+          "0",
+          "0",
+          "0",
+          "11543"
+        ],
+        [
+          "Russell H. Heil",
+          "Senior Vice President- Technical Operations",
+          "1992",
+          "256250",
+          "0",
+          "",
+          "146250",
+          "25000",
+          "0",
+          ""
+        ],
+        [
+          "Rex A. McClelland",
+          "Senior Vice President-",
+          "1994",
+          "221667",
+          "0",
+          "4289",
+          "0",
+          "23200",
+          "0",
+          "12349"
+        ],
+        [
+          "Rex A. McClelland",
+          "Senior Vice President-",
+          "1993",
+          "192083",
+          "0",
+          "2875",
+          "0",
+          "0",
+          "0",
+          "9122"
+        ],
+        [
+          "Corporate Services",
+          "",
+          "1992",
+          "191250",
+          "0",
+          "",
+          "0",
+          "18000",
+          "0",
+          ""
+        ]
+      ],
+      "schemaVersion": 1
+    },
+    "filingDate": "1994-09-13",
+    "profile": "summary_compensation",
+    "url": "/fixtures/dal_1994_sct.txt"
+  },
+  "dal_1997_sct": {
+    "documentBytes": 3340,
+    "expected": {
+      "backend": "ascii",
+      "columns": [
+        "name",
+        "position",
+        "year",
+        "salary",
+        "bonus",
+        "other_annual_comp",
+        "restricted_stock_awards",
+        "options_sars",
+        "ltip_payouts",
+        "all_other_comp"
+      ],
+      "era": "pre2006",
+      "flags": [
+        "ascii_source"
+      ],
+      "metadata": {
+        "candidates": 2,
+        "margin": 13,
+        "profile": "summary_compensation",
+        "rows_before_assembly": 19,
+        "top_score": 15
+      },
+      "ok": true,
+      "profile": "summary_compensation",
+      "provenance": [
+        "ascii_source"
+      ],
+      "reviewRequired": false,
+      "rows": [
+        [
+          "Ronald W. Allen",
+          "Chairman of the Board, President and Chief Executive Officer (retired effective July 31, 1997)",
+          "1997",
+          "562500",
+          "0",
+          "14183",
+          "0",
+          "54000",
+          "0",
+          "20568"
+        ],
+        [
+          "Ronald W. Allen",
+          "Chairman of the Board, President and Chief Executive Officer (retired effective July 31, 1997)",
+          "1996",
+          "475000",
+          "532594",
+          "12517",
+          "0",
+          "66000",
+          "0",
+          "15504"
+        ],
+        [
+          "Ronald W. Allen",
+          "Chairman of the Board, President and Chief Executive Officer (retired effective July 31, 1997)",
+          "1995",
+          "475000",
+          "560625",
+          "11667",
+          "390000",
+          "89000",
+          "0",
+          "15876"
+        ],
+        [
+          "Maurice W. Worth",
+          "Executive Vice President -- Customer Service & Acting Chief Operating Officer",
+          "1997",
+          "333333",
+          "205743",
+          "8639",
+          "0",
+          "21000",
+          "0",
+          "13700"
+        ],
+        [
+          "Maurice W. Worth",
+          "Executive Vice President -- Customer Service & Acting Chief Operating Officer",
+          "1996",
+          "282500",
+          "237500",
+          "7123",
+          "0",
+          "26000",
+          "0",
+          "11823"
+        ],
+        [
+          "Maurice W. Worth",
+          "Executive Vice President -- Customer Service & Acting Chief Operating Officer",
+          "1995",
+          "251250",
+          "187500",
+          "6375",
+          "124800",
+          "19500",
+          "0",
+          "12064"
+        ],
+        [
+          "Harold C. Alger",
+          "Executive Vice President -- Operations",
+          "1997",
+          "333333",
+          "205743",
+          "8639",
+          "0",
+          "21000",
+          "0",
+          "13700"
+        ],
+        [
+          "Harold C. Alger",
+          "Executive Vice President -- Operations",
+          "1996",
+          "300000",
+          "237500",
+          "7909",
+          "0",
+          "26000",
+          "0",
+          "12796"
+        ],
+        [
+          "Harold C. Alger",
+          "Executive Vice President -- Operations",
+          "1995",
+          "287083",
+          "206250",
+          "8123",
+          "145600",
+          "29000",
+          "0",
+          "13061"
+        ],
+        [
+          "Robert W. Coggin",
+          "Executive Vice President -- Marketing",
+          "1997",
+          "333333",
+          "211621",
+          "8639",
+          "0",
+          "21000",
+          "0",
+          "13700"
+        ],
+        [
+          "Robert W. Coggin",
+          "Executive Vice President -- Marketing",
+          "1996",
+          "291250",
+          "237500",
+          "7507",
+          "0",
+          "26000",
+          "0",
+          "12298"
+        ],
+        [
+          "Robert W. Coggin",
+          "Executive Vice President -- Marketing",
+          "1995",
+          "269167",
+          "187500",
+          "5518",
+          "124800",
+          "25500",
+          "0",
+          "12562"
+        ],
+        [
+          "Thomas J. Roeck, Jr",
+          "Senior Vice President -- Finance and Chief Financial",
+          "1997",
+          "298333",
+          "191243",
+          "7523",
+          "0",
+          "16000",
+          "0",
+          "12318"
+        ],
+        [
+          "Thomas J. Roeck, Jr",
+          "Senior Vice President -- Finance and Chief Financial",
+          "1996",
+          "285000",
+          "213216",
+          "7507",
+          "0",
+          "19500",
+          "0",
+          "12298"
+        ],
+        [
+          "Thomas J. Roeck, Jr",
+          "Senior Vice President -- Finance and Chief Financial",
+          "1995",
+          "277083",
+          "206250",
+          "5518",
+          "124800",
+          "22000",
+          "0",
+          "12562"
+        ]
+      ],
+      "schemaVersion": 1
+    },
+    "filingDate": "1997-09-19",
+    "profile": "summary_compensation",
+    "url": "/fixtures/dal_1997_sct.txt"
+  }
+}
