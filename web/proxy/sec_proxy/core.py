@@ -18,8 +18,12 @@ The three things this module *does* own:
    User-Agent, so there is one client per request. Every client is therefore
    given the same process-wide limiter after construction: SEC's ceiling is per
    requester, and this whole server is one requester.
-2. **The visitor's email lives for one call chain.** It is never stored, never
-   part of a cache key, never in a URL, and never logged.
+2. **The visitor's email lives for one call chain.** This application does not
+   store it, does not put it in a cache key or a filename, does not place it in
+   a URL, and does not log it. That is a statement about this code; it is not a
+   guarantee about hosting, reverse proxies or anything else in the path.
+   Asking for it at all is a product choice, not an SEC rule — see
+   `validate_email`.
 3. **The browser never names a URL.** It asks for a ticker, a year and a form,
    and refers to a filing by an opaque id that this module minted. A locator is
    only ever produced by `EdgarSource`, and is re-checked against SEC hosts
@@ -124,22 +128,32 @@ class UpstreamFailure(ProxyError):
 
 
 def validate_email(raw: Any) -> str:
-    """A contact address SEC would accept, or a refusal explaining why.
+    """A contact address worth sending, or a refusal explaining why.
 
-    A bare or malformed identity is rejected here rather than passed on: SEC's
-    fair-access policy asks for a monitored address, and sending something
-    obviously fake is worse than sending nothing — it spends the shared request
-    budget under an identity nobody can be reached at.
+    A bare or malformed identity is rejected here rather than passed on: sending
+    something obviously fake is worse than sending nothing, because it spends
+    the shared request budget under an identity nobody can be reached at.
+
+    To be accurate about whose requirement this is: SEC's fair-access policy
+    asks the **requester** — the application or company making automated
+    requests — to declare itself with a monitored contact. It does not ask a
+    public website to collect every visitor's personal address. Doing that is
+    this project's design choice, taken because the alternative is one shipped
+    address carrying everyone's traffic, which [D19] rules out.
     """
     email = str(raw or "").strip()
     if not email:
-        raise InvalidInput("A contact email is required. SEC asks every automated requester to identify itself.")
+        raise InvalidInput(
+            "A contact email is required: this app sends it to SEC as the contact "
+            "for your request."
+        )
     if len(email) > 254:
         raise InvalidInput("That email address is too long.")
     if not EMAIL_RE.match(email):
         raise InvalidInput(
-            f"{email!r} is not a usable contact address. "
-            "SEC needs a real, monitored mailbox, e.g. you@example.com."
+            f"{email!r} is not a usable contact address. It is sent to SEC as the "
+            "contact for this request, so it should be a real, monitored mailbox, "
+            "e.g. you@example.com."
         )
     return email
 
@@ -404,6 +418,11 @@ def _ref_to_dict(ref: FilingRef) -> dict[str, Any]:
         "filing_date": ref.filing_date.isoformat(),
         "locator": ref.locator,
         "cik": ref.cik,
+        # Round-tripped so a metadata-cache hit keys the filing cache the same
+        # way a fresh listing does. Without it the second request for a filing
+        # would fall back to deriving the identity from the URL — which happens
+        # to work for EDGAR, and would quietly stop working for anything else.
+        "accession": ref.accession,
     }
 
 
@@ -411,7 +430,7 @@ def _ref_from_dict(d: dict[str, Any]) -> FilingRef:
     y, m, day = (int(p) for p in d["filing_date"].split("-"))
     return FilingRef(
         ticker=d["ticker"], form=d["form"], filing_date=date(y, m, day),
-        locator=d["locator"], cik=d.get("cik"),
+        locator=d["locator"], cik=d.get("cik"), accession=d.get("accession"),
     )
 
 

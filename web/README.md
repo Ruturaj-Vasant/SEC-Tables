@@ -43,10 +43,17 @@ adds no filing logic of its own — ticker→CIK, the historical `files[]`
 pagination, the pre-May-2000 complete-submission route and the User-Agent rules
 are the library's, already tested. It holds one SEC request budget for every
 visitor at once, caches filing bytes forever (a filing is immutable once filed),
-and **never persists or logs the contact email**: POST-only so it cannot reach an
-access log, absent from the cache key, redacted from request logs. Four tests
-assert that, and one asserts the opposite — that it *does* reach SEC, because
-that is what it is for.
+and **does not intentionally persist or log the contact email**: POST-only so it
+cannot reach an access log, absent from the cache key and from every filename,
+redacted from request logs. Tests assert that, and one asserts the opposite —
+that it *does* reach SEC, because that is what it is for.
+
+Asking the visitor for an address is this project's design choice, not an SEC
+rule. SEC asks the *requester* to identify itself with a monitored contact; it
+does not ask websites to collect their visitors' addresses. The alternative — one
+shipped address carrying everyone's traffic — is what D19 rules out. And the
+privacy statement above is about this application's code: it cannot speak for
+hosting providers, reverse proxies or browser extensions.
 
 ### What the app deliberately does not have
 

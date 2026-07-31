@@ -62,13 +62,25 @@ by CORS before it starts. That has not changed and is not worked around here —
 it is the reason a server sits in the path at all. Related: a page cannot make an
 honest SEC User-Agent declaration, because the browser controls that header.
 
-**2. The visitor's email is SEC's requirement, not ours.** SEC's fair-access
-policy wants a monitored contact. The proxy builds
-`sec-tables-web/0.1 (<visitor email>)` per request and sends it. It is used for
-exactly one HTTP call chain and then discarded: never written to disk, never in
-a URL (all API calls are POST so it cannot reach an access log), never in the
-cache key, and the request logger redacts the body. The page says so before the
-field.
+**2. A contact goes to SEC; asking the visitor for it is our choice.**
+*(Revised — the earlier text here said the visitor's email was "SEC's
+requirement, not ours", which overstated the guidance.)* SEC's fair-access
+policy asks the **requester** — the application or company making automated
+requests — to declare itself with a monitored contact address. It does not ask
+a public website to collect every visitor's personal address.
+
+This app asks for one anyway, and that is a product decision: the alternative is
+shipping a single address that carries every user's traffic, which D19 rules out
+because that identity is the one that gets blocked and it misrepresents who is
+asking. The proxy builds `sec-tables-web/0.1 (<visitor email>)` per request and
+sends it in the `User-Agent` header.
+
+What this application does with it: uses it for one HTTP call chain and
+discards it. It is not written to disk, not part of the cache key or any
+filename, not in a URL (every API call is POST, so it cannot reach an access
+log), and not logged. **That is a statement about this code, not a guarantee
+covering hosting providers, reverse proxies, browser extensions or any other
+infrastructure in the path.** The form says all of this before the field.
 
 **3. Extraction can hang, not just fail.** The bridge already found that
 `colspan="2000000000"` expands the grid until the thread stops responding. So

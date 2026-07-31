@@ -5,6 +5,7 @@ optional module, so the CLI stays fully testable without one.
 """
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 
@@ -135,6 +136,143 @@ class TestCache:
     def test_human_bytes(self):
         assert human_bytes(512) == "512 B"
         assert human_bytes(2048).endswith("KB")
+
+
+class TestTwoFilingsOnOneDay:
+    """A company can file twice in a day, and the cache must not conflate them.
+
+    (ticker, form, filing_date) is not a filing identity. Delta filed a DEF 14A
+    and a second one the same day here; before the filing token was part of the
+    path, both resolved to `1997-09-19_DEF_14A.txt` and whichever was fetched
+    first answered for the other. Nothing surfaced: the caller asked for filing
+    B, received filing A, and both are real filings of the right form on the
+    right date.
+
+    The existing multi-filing tests never caught it because every one of them
+    used filings on *different* dates.
+    """
+
+    ORIGINAL = FilingRef(
+        "DAL", "DEF 14A", date(1997, 9, 19),
+        "https://www.sec.gov/Archives/edgar/data/27904/0000950144-97-010197.txt",
+        cik="27904", accession="0000950144-97-010197",
+    )
+    AMENDED = FilingRef(
+        "DAL", "DEF 14A", date(1997, 9, 19),
+        "https://www.sec.gov/Archives/edgar/data/27904/0000950144-97-010198.txt",
+        cik="27904", accession="0000950144-97-010198",
+    )
+
+    def test_same_day_filings_get_different_paths(self, tmp_path):
+        c = FilingCache(tmp_path)
+        assert c.path_for(self.ORIGINAL, ".txt") != c.path_for(self.AMENDED, ".txt")
+
+    def test_each_filing_caches_and_returns_its_own_bytes(self, tmp_path):
+        c = FilingCache(tmp_path)
+        c.put(self.ORIGINAL, b"the original proxy statement", suffix=".txt")
+        c.put(self.AMENDED, b"the amended proxy statement", suffix=".txt")
+
+        assert c.get(self.ORIGINAL) == b"the original proxy statement"
+        assert c.get(self.AMENDED) == b"the amended proxy statement"
+
+    def test_caching_one_does_not_satisfy_a_lookup_for_the_other(self, tmp_path):
+        """The decisive one: a miss must stay a miss."""
+        c = FilingCache(tmp_path)
+        c.put(self.ORIGINAL, b"the original proxy statement", suffix=".txt")
+        assert c.get(self.AMENDED) is None
+
+    def test_the_same_filing_still_hits_the_cache(self, tmp_path):
+        """Uniqueness must not have been bought by making every lookup miss."""
+        c = FilingCache(tmp_path)
+        c.put(self.ORIGINAL, b"bytes", suffix=".txt")
+        assert c.get(self.ORIGINAL) == b"bytes"
+        # A ref rebuilt from scratch — as the proxy does on a second request —
+        # keys the same way.
+        rebuilt = FilingRef(
+            "DAL", "DEF 14A", date(1997, 9, 19), self.ORIGINAL.locator,
+            cik="27904", accession="0000950144-97-010197",
+        )
+        assert c.get(rebuilt) == b"bytes"
+
+    def test_the_accession_is_recovered_from_the_url_when_not_recorded(self, tmp_path):
+        """A ref built before `accession` existed still keys correctly.
+
+        Every archive URL carries the accession number, so the identity is
+        recoverable and two same-day filings stay apart without the field.
+        """
+        c = FilingCache(tmp_path)
+        bare_a = FilingRef("DAL", "DEF 14A", date(1997, 9, 19), self.ORIGINAL.locator)
+        bare_b = FilingRef("DAL", "DEF 14A", date(1997, 9, 19), self.AMENDED.locator)
+        c.put(bare_a, b"a", suffix=".txt")
+        assert c.get(bare_b) is None
+        assert c.get(bare_a) == b"a"
+        assert "0000950144-97-010197" in c.path_for(bare_a, ".txt").name
+
+    def test_a_locator_with_no_accession_still_separates_filings(self, tmp_path):
+        """`LocalSource` paths have no accession; a digest keeps them distinct."""
+        c = FilingCache(tmp_path)
+        a = FilingRef("DAL", "DEF 14A", date(1997, 9, 19), "/corpus/a.txt")
+        b = FilingRef("DAL", "DEF 14A", date(1997, 9, 19), "/corpus/b.txt")
+        c.put(a, b"aaa", suffix=".txt")
+        c.put(b, b"bbb", suffix=".txt")
+        assert c.get(a) == b"aaa" and c.get(b) == b"bbb"
+
+    def test_filenames_stay_safe_and_carry_nothing_about_the_requester(self, tmp_path):
+        """A path segment is not a place to put a URL, and not a place for a person."""
+        c = FilingCache(tmp_path)
+        hostile = FilingRef(
+            "DAL", "DEF 14A", date(1997, 9, 19),
+            "https://www.sec.gov/Archives/../../etc/passwd?who=visitor@example.com",
+        )
+        name = c.path_for(hostile, ".txt").name
+        assert re.fullmatch(r"[A-Za-z0-9._-]+", name), name
+        assert "@" not in name and "/" not in name and ".." not in name
+        # And the written path really is inside the cache root.
+        written = c.put(hostile, b"x", suffix=".txt")
+        assert written is not None and tmp_path in written.parents
+
+    def test_both_filings_are_visible_to_localsource(self, tmp_path):
+        """The cache stays a browsable corpus, with both same-day filings in it."""
+        c = FilingCache(tmp_path)
+        c.put(self.ORIGINAL, b"one", suffix=".txt")
+        c.put(self.AMENDED, b"two", suffix=".txt")
+        found = LocalSource(tmp_path).list_filings("DAL", year=1997)
+        assert len(found) == 2, [str(f) for f in found]
+        assert {LocalSource(tmp_path).read(f) for f in found} == {b"one", b"two"}
+
+
+class TestLegacyCacheEntries:
+    """Pre-token files are left alone and no longer trusted.
+
+    `1997-09-19_DEF_14A.txt` could have come from any filing of that form on
+    that date. The cache cannot tell which, so reading it would mean sometimes
+    returning the wrong filing's bytes with nothing to indicate it. The file is
+    not deleted — it is someone's corpus, and `LocalSource` still reads it — but
+    the filing it holds is fetched once more under a name that identifies it.
+    """
+
+    REF = FilingRef(
+        "DAL", "DEF 14A", date(1997, 9, 19),
+        "https://www.sec.gov/Archives/edgar/data/27904/0000950144-97-010197.txt",
+        accession="0000950144-97-010197",
+    )
+
+    def _write_legacy(self, root):
+        legacy = root / "DAL" / "DEF_14A" / "1997-09-19_DEF_14A.txt"
+        legacy.parent.mkdir(parents=True, exist_ok=True)
+        legacy.write_bytes(b"ambiguous legacy bytes")
+        return legacy
+
+    def test_a_legacy_entry_is_not_served(self, tmp_path):
+        self._write_legacy(tmp_path)
+        assert FilingCache(tmp_path).get(self.REF) is None
+
+    def test_a_legacy_entry_is_not_destroyed(self, tmp_path):
+        legacy = self._write_legacy(tmp_path)
+        c = FilingCache(tmp_path)
+        c.put(self.REF, b"freshly fetched", suffix=".txt")
+        assert legacy.read_bytes() == b"ambiguous legacy bytes"
+        assert c.get(self.REF) == b"freshly fetched"
 
 
 class TestCLI:

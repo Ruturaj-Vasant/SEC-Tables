@@ -75,12 +75,25 @@ export function FilingForm(props: Props) {
         label="Contact email"
         error={errors.email}
         hint={
-          // Said before the field, not in a policy page. The address is sent to
-          // a third party, which is the kind of thing a person should know
-          // before typing rather than after.
+          // Said before the field, not in a policy page. The address goes to a
+          // third party, which is the kind of thing a person should know before
+          // typing rather than after.
+          //
+          // The wording is careful on two points. SEC asks the *requester* to
+          // identify itself with a monitored contact; it does not ask a website
+          // to collect every visitor's address. Passing yours through instead
+          // of shipping one shared address is this project's choice, and it is
+          // described as one. And the privacy claim covers what this
+          // application does — it cannot speak for hosting, intermediaries or
+          // whatever else is between a browser and a server.
           <>
-            Sent to SEC as this app's contact identity, because SEC asks automated
-            requesters to identify themselves. <strong>It is not stored or logged here.</strong>
+            Sent to SEC in the <code>User-Agent</code> header of the requests this app
+            makes for you. Asking for your address is this app's design choice, not an
+            SEC rule: SEC asks the requester to identify itself with a monitored contact,
+            and this app passes yours through rather than shipping one shared address.{" "}
+            <strong>The application does not intentionally store or log it.</strong> It
+            cannot make guarantees about hosting providers, network intermediaries or
+            browser extensions.
           </>
         }
       >

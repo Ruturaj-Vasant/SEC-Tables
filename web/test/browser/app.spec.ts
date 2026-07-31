@@ -398,9 +398,46 @@ test("nothing on the page claims the result is verified or accurate", async ({ a
   expect(text).toContain("heuristic");
 });
 
-test("the contact field says where the address goes before it is typed", async ({ app }) => {
-  await expect(app.locator("#email-hint")).toContainText("Sent to SEC");
-  await expect(app.locator("#email-hint")).toContainText("not stored or logged");
+test("the contact field is honest about the address before it is typed", async ({ app }) => {
+  const hint = app.locator("#email-hint");
+  // Where it goes, and in what.
+  await expect(hint).toContainText("Sent to SEC");
+  await expect(hint).toContainText("User-Agent");
+  // Whose requirement it is. SEC asks the *requester* to identify itself; it
+  // does not ask websites to collect their visitors' addresses, and the page
+  // must not imply otherwise.
+  await expect(hint).toContainText("design choice");
+  await expect(hint).toContainText("not an SEC rule");
+  // What is promised, scoped to what this code can actually promise.
+  await expect(hint).toContainText("does not intentionally store or log");
+  await expect(hint).toContainText(/hosting providers|intermediaries|extensions/);
+  // And what is not claimed.
+  const text = await hint.innerText();
+  expect(text.toLowerCase()).not.toContain("sec requires");
+  expect(text.toLowerCase()).not.toContain("guaranteed");
+});
+
+test("the address never reaches a URL, and no response echoes it back", async ({ app }) => {
+  const urls: string[] = [];
+  const bodies: string[] = [];
+  app.on("request", (r) => urls.push(r.url()));
+  app.on("response", async (r) => {
+    if (!r.url().includes("/api/")) return;
+    try {
+      bodies.push(JSON.stringify(await r.headerValues("x-filing-meta")) + (await r.text()).slice(0, 4000));
+    } catch {
+      /* a binary filing body is not text; its headers are captured above */
+    }
+  });
+
+  const address = "privacy-probe@example.com";
+  await fill(app, { ticker: "DAL", year: "1997", email: address });
+  await findFiling(app);
+
+  // Every API call is a POST, so the address is in a body — which no access log,
+  // Referer or browser history records.
+  expect(urls.filter((u) => u.includes(address))).toEqual([]);
+  expect(bodies.filter((b) => b.includes(address))).toEqual([]);
 });
 
 // ---------------------------------------------------------------------------

@@ -50,6 +50,17 @@ DAL_OLD = {
     "primaryDocument": ["", "", ""],
 }
 
+# Two filings of the same form on the SAME day. Not a contrived case — an
+# original proxy and a corrected one are routinely filed together — and the
+# case every existing multi-filing test missed, because all of them used
+# filings on different dates.
+DAL_SAME_DAY = {
+    "form": ["DEF 14A", "DEF 14A"],
+    "filingDate": ["1998-09-18", "1998-09-18"],
+    "accessionNumber": ["0000027904-98-000030", "0000027904-98-000031"],
+    "primaryDocument": ["", ""],
+}
+
 FILING_BYTES = b"<TABLE>\nSUMMARY COMPENSATION TABLE\nRonald W. Allen  1997  562,500\n</TABLE>\n"
 
 
@@ -87,7 +98,8 @@ class FakeEdgar:
         # at `submissions/CIK…-submissions-001.json`, so a naive "submissions/CIK"
         # test matches both and the old filings are never served.
         if "-submissions-" in url:
-            return 200, ok, json.dumps(DAL_OLD).encode()
+            merged = {k: DAL_OLD[k] + DAL_SAME_DAY[k] for k in DAL_OLD}
+            return 200, ok, json.dumps(merged).encode()
         if "submissions/CIK" in url:
             return 200, ok, json.dumps({
                 "cik": "27904",
@@ -99,6 +111,11 @@ class FakeEdgar:
         if "submissions/CIK0000027904-submissions-001.json" in url or "-submissions-001.json" in url:
             return 200, ok, json.dumps(DAL_OLD).encode()
         if "/Archives/" in url:
+            # Byte-distinct per accession, so a cache that conflated two
+            # same-day filings would return provably the wrong document.
+            for accession in DAL_SAME_DAY["accessionNumber"]:
+                if accession in url:
+                    return 200, {"Content-Type": "text/plain"}, f"filing {accession}".encode()
             return 200, {"Content-Type": "text/plain"}, FILING_BYTES
         return 404, {}, b"not found"
 

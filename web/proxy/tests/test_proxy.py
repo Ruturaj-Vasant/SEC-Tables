@@ -220,6 +220,63 @@ class TestCaching:
         assert len(service.edgar.calls) == before
 
 
+class TestSameDayFilings:
+    """The cache-identity defect, exercised through the service.
+
+    Everything above this class used filings on different dates, which is why
+    the collision survived. Here the two filings differ only in accession —
+    same ticker, same form, same day — and each must return its own bytes.
+    """
+
+    def _both(self, service):
+        refs = service.list_filings(email=EMAIL, ticker="DAL", year=1998, form="DEF 14A")
+        assert len(refs) == 2, "the fake must offer two filings on one day"
+        assert refs[0].filing_date == refs[1].filing_date
+        return refs
+
+    def test_two_filings_on_one_day_are_listed_separately(self, service):
+        refs = self._both(service)
+        assert filing_id(refs[0]) != filing_id(refs[1])
+
+    def test_each_returns_its_own_document(self, service):
+        first, second = self._both(service)
+        a, _ = service.fetch(email=EMAIL, ref=first)
+        b, _ = service.fetch(email=EMAIL, ref=second)
+        assert a != b
+        assert a == b"filing 0000027904-98-000030"
+        assert b == b"filing 0000027904-98-000031"
+
+    def test_fetching_one_does_not_serve_the_other_from_cache(self, service):
+        """The decisive check: the second fetch must be a miss, not a hit."""
+        first, second = self._both(service)
+        service.fetch(email=EMAIL, ref=first)
+        data, cached = service.fetch(email=EMAIL, ref=second)
+        assert cached is False, "the second filing was served the first one's bytes"
+        assert data == b"filing 0000027904-98-000031"
+
+    def test_re_fetching_the_same_filing_still_hits(self, service):
+        first, _ = self._both(service)
+        service.fetch(email=EMAIL, ref=first)
+        _, cached = service.fetch(email=EMAIL, ref=first)
+        assert cached is True
+
+    def test_the_accession_survives_the_metadata_cache(self, service):
+        """A second listing comes from the metadata cache; identity must persist."""
+        self._both(service)
+        refs = service.list_filings(email=EMAIL, ticker="DAL", year=1998, form="DEF 14A")
+        assert [r.accession for r in refs] == [
+            "0000027904-98-000030", "0000027904-98-000031",
+        ]
+
+    def test_the_two_cache_files_are_distinct_on_disk(self, service):
+        first, second = self._both(service)
+        service.fetch(email=EMAIL, ref=first)
+        service.fetch(email=EMAIL, ref=second)
+        files = sorted(p.name for p in service.filings.root.rglob("*.txt"))
+        assert len(files) == 2, files
+        assert files[0] != files[1]
+
+
 class TestRateBudget:
     def test_every_visitor_shares_one_bucket(self, tmp_path):
         """Two visitors are two clients but must not be two budgets.
@@ -373,6 +430,34 @@ class TestNoArbitraryFetching:
 # ---------------------------------------------------------------------------
 
 
+class TestWhoseRequirementItIs:
+    """The claim in the copy, checked against what SEC actually asks.
+
+    SEC's fair-access policy is addressed to the requester — the application or
+    company making automated requests — and asks it to declare itself with a
+    monitored contact. It does not ask a public website to collect every
+    visitor's personal address. This app does that anyway, and the messages it
+    shows must call it a choice rather than a rule.
+    """
+
+    def test_the_missing_email_message_does_not_invent_a_regulation(self):
+        with pytest.raises(InvalidInput) as exc:
+            validate_email("")
+        assert "sec requires" not in str(exc.value).lower()
+        assert "this app sends it to SEC" in str(exc.value)
+
+    def test_the_malformed_email_message_says_why_a_real_one_matters(self):
+        with pytest.raises(InvalidInput) as exc:
+            validate_email("nope")
+        assert "monitored mailbox" in str(exc.value)
+
+    def test_the_declared_identity_still_names_the_application_first(self):
+        """Whoever's address it is, SEC's stated format is application + contact."""
+        from sec_tables.fetch import resolve_user_agent
+
+        assert resolve_user_agent(user_agent_for(EMAIL)).startswith(APP_NAME)
+
+
 class TestEmailIsNotKept:
     def test_the_service_holds_no_reference_to_it_after_a_call(self, service):
         refs = service.list_filings(email=EMAIL, ticker="DAL", year=1997, form="DEF 14A")
@@ -391,6 +476,19 @@ class TestEmailIsNotKept:
             if path.is_file():
                 assert EMAIL.encode() not in path.read_bytes()
                 assert EMAIL not in str(path)
+
+    def test_the_cache_filename_is_derived_only_from_the_filing(self, service):
+        """The filing token is the accession number — an SEC identifier, not ours.
+
+        Worth asserting separately from the grep above: the cache key gained a
+        component in this pass, and a key derived from anything about the
+        requester would be a new place for the address to live.
+        """
+        refs = service.list_filings(email=EMAIL, ticker="DAL", year=1997, form="DEF 14A")
+        path = service.filings.path_for(refs[0], ".txt")
+        assert refs[0].accession is not None
+        assert refs[0].accession in path.name
+        assert "@" not in path.name
 
     def test_it_does_reach_sec_because_sec_requires_it(self, service):
         """The counterpart to every test above: the address is not secret from

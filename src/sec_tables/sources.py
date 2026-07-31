@@ -37,6 +37,14 @@ class FilingRef:
     filing_date: date
     locator: str  # path or URL — meaningful only to the source that produced it
     cik: Optional[str] = None
+    # EDGAR's own identifier for the submission, when the source knows it.
+    # Optional because a `LocalSource` file has none, and last because adding a
+    # field to a frozen dataclass in the middle would break positional callers.
+    #
+    # It is here because (ticker, form, filing_date) is NOT a filing identity:
+    # a company can file two documents of the same form on the same day, and
+    # anything keyed on the triple silently conflates them.
+    accession: Optional[str] = None
 
     @property
     def year(self) -> int:

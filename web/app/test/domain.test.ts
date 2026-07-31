@@ -60,6 +60,15 @@ test("a complete form validates", () => {
   assert.ok(isValid(validateForm(form(), NOW)));
 });
 
+test("the missing-email message does not claim SEC demands the visitor's address", () => {
+  // The requirement SEC states is on the *requester*: an application declaring
+  // itself with a monitored contact. Asking each visitor for theirs is this
+  // app's choice, and the copy must not launder that into a regulation.
+  const message = validateForm(form({ email: "" }), NOW).email!;
+  assert.doesNotMatch(message.toLowerCase(), /sec requires/);
+  assert.match(message, /this app sends it to SEC/);
+});
+
 test("email rejects what SEC could not contact anyone at", () => {
   for (const bad of ["", "   ", "nope", "@example.com", "user@", "user@nodot", "a b@c.com"]) {
     const errors = validateForm(form({ email: bad }), NOW);

@@ -50,7 +50,7 @@ export function validateForm(values: FormValues, now = new Date()): FieldErrors 
   const errors: FieldErrors = {};
 
   const email = values.email.trim();
-  if (!email) errors.email = "SEC requires a contact address from automated requesters.";
+  if (!email) errors.email = "A contact address is needed: this app sends it to SEC as the contact for your request.";
   else if (!EMAIL_RE.test(email)) errors.email = "That is not a usable email address.";
   else if (email.length > 254) errors.email = "That email address is too long.";
 
